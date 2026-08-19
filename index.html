@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Docly — Read the point, skip the pages</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   html, body { background: #0B1220; margin: 0; padding: 0; height: 100%; color: #E6EDF3; }
@@ -24,7 +24,25 @@
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#8CA3C7;font-family:sans-serif;font-size:14px;">
+    Loading Docly…
+  </div>
+</div>
+<div id="error-banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#FF5C5C;color:#fff;padding:12px;font-family:monospace;font-size:12px;z-index:9999;white-space:pre-wrap;"></div>
+<script>
+  function showError(msg) {
+    var el = document.getElementById("error-banner");
+    el.style.display = "block";
+    el.textContent = "Docly failed to load:\n" + msg;
+  }
+  window.addEventListener("error", function (e) {
+    showError(e.message + " (" + (e.filename || "") + ":" + (e.lineno || "") + ")");
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    showError("Promise error: " + (e.reason && e.reason.message ? e.reason.message : e.reason));
+  });
+</script>
 
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useRef } = React;
