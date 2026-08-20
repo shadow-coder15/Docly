@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.29.0/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://js.paystack.co/v1/inline.js"></script>
 <style>
   html, body { background: #0B1220; margin: 0; padding: 0; height: 100%; color: #E6EDF3; }
   #root { min-height: 100vh; }
@@ -51,6 +52,10 @@ const { useState, useEffect, useRef } = React;
 // ---- CONFIG: your real project values ----
 const SUPABASE_URL = "https://ukjwqevoqsdfnmylxswt.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_1mWGhz0AjDtRhN8rOvx7FA_tZ8Ljb6L";
+const PAYSTACK_PUBLIC_KEY = "pk_test_17b9fd74156e85b11f2235a62df6189a10bdcf9c";
+const PAYSTACK_PLAN_CODE = "PLN_vpq9g6959dae6ns";
+const PRO_PRICE_PESEWAS = 3000; // GHS 30.00
+const DAYPASS_PRICE_PESEWAS = 200; // GHS 2.00
 
 const FREE_MAX_PAGES = 4;
 const FREE_DOCS_PER_DAY = 1;
@@ -152,7 +157,7 @@ function Docly() {
     const meta = user?.user_metadata || {};
     const usageM = meta.usage && meta.usage.date === todayStr() ? meta.usage : { date: todayStr(), count: 0 };
     const adsM = meta.ads && meta.ads.date === todayStr() ? meta.ads : { date: todayStr(), count: 0 };
-    return { pro: !!meta.pro, usage: usageM, ads: adsM };
+    return { pro: !!meta.pro, usage: usageM, ads: adsM, dayPassUntil: meta.dayPassUntil || null };
   }
 
   async function loadSessionUser(accessToken) {
@@ -163,6 +168,7 @@ function Docly() {
     setIsPro(parsed.pro);
     setUsage(parsed.usage);
     setAdsWatched(parsed.ads);
+    setDayPassUntil(parsed.dayPassUntil);
     setSession({ access_token: accessToken, user });
   }
 
@@ -201,13 +207,55 @@ function Docly() {
     const nextPro = partial.pro !== undefined ? partial.pro : isPro;
     const nextUsage = partial.usage !== undefined ? partial.usage : usage;
     const nextAds = partial.ads !== undefined ? partial.ads : adsWatched;
+    const nextDayPass = partial.dayPassUntil !== undefined ? partial.dayPassUntil : dayPassUntil;
     try {
       await fetch(`${SUPABASE_URL}/auth/v1/user`, {
         method: "PUT",
         headers: authHeaders(session.access_token),
-        body: JSON.stringify({ data: { pro: nextPro, usage: nextUsage, ads: nextAds } }),
+        body: JSON.stringify({ data: { pro: nextPro, usage: nextUsage, ads: nextAds, dayPassUntil: nextDayPass } }),
       });
     } catch (e) {}
+  }
+
+  function buyDayPass() {
+    setPayError(null);
+    if (!window.PaystackPop) {
+      setPayError("Payment isn't ready yet — check your connection and try again.");
+      return;
+    }
+    const handler = window.PaystackPop.setup({
+      key: PAYSTACK_PUBLIC_KEY,
+      email: session.user.email,
+      amount: DAYPASS_PRICE_PESEWAS,
+      currency: "GHS",
+      ref: "docly_daypass_" + Date.now(),
+      callback: function (response) {
+        setPayLoading(true);
+        fetch("/api/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference: response.reference }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            setPayLoading(false);
+            if (data.verified) {
+              const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+              setDayPassUntil(until);
+              persistMetadata({ dayPassUntil: until });
+              setError((prev) => (prev === "RUSH_HOUR" ? null : prev));
+            } else {
+              setPayError("Payment could not be verified. If you were charged, contact support.");
+            }
+          })
+          .catch(() => {
+            setPayLoading(false);
+            setPayError("Couldn't confirm payment. If you were charged, contact support.");
+          });
+      },
+      onClose: function () {},
+    });
+    handler.openIframe();
   }
 
   function signInWithGoogle() {
@@ -280,10 +328,55 @@ function Docly() {
     if (updates.length > 0) localStorage.setItem("docly-updates-seen", updates[0].id.toString());
   }
 
+  const [payLoading, setPayLoading] = useState(false);
+  const [payError, setPayError] = useState(null);
+  const [dayPassUntil, setDayPassUntil] = useState(null);
+
+  const dayPassActive = dayPassUntil && new Date(dayPassUntil) > new Date();
+  const hasUnlimitedAccess = isPro || dayPassActive;
+
   async function togglePro() {
-    if (isPro) { setShowDowngradeConfirm(true); return; }
-    setIsPro(true);
-    await persistMetadata({ pro: true });
+    if (isPro) {
+      setShowDowngradeConfirm(true);
+      return;
+    }
+    setPayError(null);
+    if (!window.PaystackPop) {
+      setPayError("Payment isn't ready yet — check your connection and try again.");
+      return;
+    }
+    const handler = window.PaystackPop.setup({
+      key: PAYSTACK_PUBLIC_KEY,
+      email: session.user.email,
+      plan: PAYSTACK_PLAN_CODE,
+      amount: PRO_PRICE_PESEWAS,
+      currency: "GHS",
+      ref: "docly_" + Date.now(),
+      callback: function (response) {
+        setPayLoading(true);
+        fetch("/api/verify-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference: response.reference }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            setPayLoading(false);
+            if (data.verified) {
+              setIsPro(true);
+              persistMetadata({ pro: true });
+            } else {
+              setPayError("Payment could not be verified. If you were charged, contact support.");
+            }
+          })
+          .catch(() => {
+            setPayLoading(false);
+            setPayError("Couldn't confirm payment. If you were charged, contact support.");
+          });
+      },
+      onClose: function () {},
+    });
+    handler.openIframe();
   }
   async function confirmDowngrade() {
     setIsPro(false); setShowDowngradeConfirm(false);
@@ -334,7 +427,7 @@ function Docly() {
 
   async function startSummary() {
     setError(null);
-    if (!isPro) {
+    if (!hasUnlimitedAccess) {
       if (pageEstimate && pageEstimate > FREE_MAX_PAGES) {
         setError(`This document is about ${pageEstimate} pages. Free accounts summarize documents up to ${FREE_MAX_PAGES} pages. Upgrade to Pro for longer documents.`);
         return;
@@ -357,7 +450,7 @@ function Docly() {
     try {
       const answer = await callBackend(toGeminiHistory([userMsg]));
       setMessages((prev) => [...prev, { role: "assistant", parts: [{ text: answer }], display: answer }]);
-      if (!isPro) await persistUsage({ date: todayStr(), count: usage.count + 1 });
+      if (!isPro && !dayPassActive) await persistUsage({ date: todayStr(), count: usage.count + 1 });
     } catch (e) {
       setError("Something went wrong generating the summary: " + (e.message || "unknown error"));
       setMessages([]);
@@ -400,7 +493,7 @@ function Docly() {
     }, 1000);
   }
 
-  const docsLeftToday = isPro ? "Unlimited" : Math.max(0, FREE_DOCS_PER_DAY - usage.count);
+  const docsLeftToday = hasUnlimitedAccess ? "Unlimited" : Math.max(0, FREE_DOCS_PER_DAY - usage.count);
 
   if (!ready) {
     return <div className="min-h-screen w-full bg-[#0B1220] flex items-center justify-center"><Icon.Loader className="w-6 h-6 text-[#2E9DF4]" /></div>;
@@ -455,10 +548,15 @@ function Docly() {
         </div>
         <div className="flex items-center gap-3">
           <span className="mono text-[11px] text-[#A9C6EC] hidden sm:inline">
-            {isPro ? "PRO" : `${docsLeftToday} FREE DOC LEFT TODAY`}
+            {isPro ? "PRO" : dayPassActive ? "24H PASS" : `${docsLeftToday} FREE DOC LEFT TODAY`}
           </span>
-          <button onClick={togglePro} className={`mono text-[11px] px-3 py-1.5 rounded border transition-colors ${isPro ? "border-[#FFB020] text-[#FFB020] bg-[#FFB020]/10" : "border-[#2E9DF4] text-[#2E9DF4] hover:bg-[#2E9DF4]/10"}`}>
-            {isPro ? <span className="flex items-center gap-1"><Icon.Check className="w-3 h-3" /> PRO ACTIVE</span> : "UPGRADE TO PRO"}
+          {!isPro && !dayPassActive && (
+            <button onClick={buyDayPass} disabled={payLoading} className="mono text-[11px] px-3 py-1.5 rounded border border-[#8CA3C7] text-[#8CA3C7] hover:bg-[#8CA3C7]/10 transition-colors disabled:opacity-50">
+              GHS 2 / 24H
+            </button>
+          )}
+          <button onClick={togglePro} disabled={payLoading} className={`mono text-[11px] px-3 py-1.5 rounded border transition-colors disabled:opacity-50 ${isPro ? "border-[#FFB020] text-[#FFB020] bg-[#FFB020]/10" : "border-[#2E9DF4] text-[#2E9DF4] hover:bg-[#2E9DF4]/10"}`}>
+            {payLoading ? <span className="flex items-center gap-1"><Icon.Loader className="w-3 h-3" /> VERIFYING</span> : isPro ? <span className="flex items-center gap-1"><Icon.Check className="w-3 h-3" /> PRO ACTIVE</span> : "UPGRADE TO PRO"}
           </button>
           <button onClick={openUpdates} className="relative text-[#8CA3C7] hover:text-[#E6EDF3] transition-colors" title="Updates">
             <Icon.Bell className="w-4 h-4" />
@@ -467,6 +565,10 @@ function Docly() {
           <button onClick={signOut} className="text-[#8CA3C7] hover:text-[#E6EDF3] transition-colors" title="Sign out"><Icon.Logout className="w-4 h-4" /></button>
         </div>
       </header>
+
+      {payError && (
+        <div className="bg-[#FF5C5C]/10 border-b border-[#FF5C5C]/30 text-[#FF5C5C] text-[12px] text-center py-2 px-4">{payError}</div>
+      )}
 
       <main className="flex-1 flex flex-col items-center px-4 py-10">
         {!file ? (
@@ -512,8 +614,9 @@ function Docly() {
                   <button onClick={startWatchingAd} className="mono text-[13px] flex-1 bg-[#FFB020] text-[#0B1220] rounded-lg py-2.5 flex items-center justify-center gap-2 font-semibold hover:opacity-90 transition-opacity">
                     <Icon.Play className="w-3.5 h-3.5" /> WATCH AD ({AD_SECONDS}s)
                   </button>
-                  <button onClick={togglePro} className="mono text-[13px] flex-1 border border-[#2E9DF4] text-[#2E9DF4] rounded-lg py-2.5 hover:bg-[#2E9DF4]/10 transition-colors">GO PRO INSTEAD</button>
+                  <button onClick={buyDayPass} disabled={payLoading} className="mono text-[13px] flex-1 border border-[#8CA3C7] text-[#8CA3C7] rounded-lg py-2.5 hover:bg-[#8CA3C7]/10 transition-colors disabled:opacity-50">GHS 2 FOR 24H</button>
                 </div>
+                <button onClick={togglePro} className="mono text-[13px] w-full border border-[#2E9DF4] text-[#2E9DF4] rounded-lg py-2.5 hover:bg-[#2E9DF4]/10 transition-colors">GO PRO INSTEAD</button>
               </div>
             )}
 
@@ -594,9 +697,9 @@ function Docly() {
       {showDowngradeConfirm && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
           <div className="bg-[#16213A] border border-[#25355A] rounded-xl p-6 w-full max-w-sm flex flex-col gap-4">
-            <p className="text-sm">Cancel your Pro plan? You'll go back to the free daily limit.</p>
+            <p className="text-sm">Turn off Pro features in Docly? This stops your Pro access here, but doesn't cancel the recurring charge on Paystack's side yet — email us if you need billing stopped.</p>
             <div className="flex gap-2">
-              <button onClick={confirmDowngrade} className="flex-1 mono text-[13px] border border-[#FF5C5C] text-[#FF5C5C] rounded-lg py-2.5">CANCEL PRO</button>
+              <button onClick={confirmDowngrade} className="flex-1 mono text-[13px] border border-[#FF5C5C] text-[#FF5C5C] rounded-lg py-2.5">TURN OFF PRO</button>
               <button onClick={() => setShowDowngradeConfirm(false)} className="flex-1 mono text-[13px] bg-[#2E9DF4] text-[#0B1220] rounded-lg py-2.5 font-semibold">KEEP PRO</button>
             </div>
           </div>
