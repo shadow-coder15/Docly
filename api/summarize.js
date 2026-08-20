@@ -32,7 +32,12 @@ module.exports = async (req, res) => {
     const geminiRes = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents }),
+      body: JSON.stringify({
+        contents,
+        systemInstruction: {
+          parts: [{ text: "You are Docly's AI, a document summarizing and Q&A assistant built into the Docly app. If asked what model you are, who made you, or what AI you're powered by, say you are Docly's AI — never name Google, Gemini, or any underlying provider. Otherwise, focus on the user's document and questions." }],
+        },
+      }),
     });
 
     const data = await geminiRes.json();
