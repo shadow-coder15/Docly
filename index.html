@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Docly — Read the point, skip the pages</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20120%20120%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27bg%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%25%27%20stop-color%3D%27%232E9DF4%27/%3E%3Cstop%20offset%3D%27100%25%27%20stop-color%3D%27%231B6FC2%27/%3E%3C/linearGradient%3E%3ClinearGradient%20id%3D%27fold%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%25%27%20stop-color%3D%27%23F4F8FD%27/%3E%3Cstop%20offset%3D%27100%25%27%20stop-color%3D%27%23C9DCF2%27/%3E%3C/linearGradient%3E%3ClinearGradient%20id%3D%27spark%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%25%27%20stop-color%3D%27%23FFE9B8%27/%3E%3Cstop%20offset%3D%27100%25%27%20stop-color%3D%27%23FFB020%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27120%27%20height%3D%27120%27%20rx%3D%2726%27%20fill%3D%27url%28%23bg%29%27/%3E%3Cpath%20d%3D%27M40%2030h30l0%200v18a2%202%200%200%200%202%202h18v40a5%205%200%200%201-5%205H40a5%205%200%200%201-5-5V35a5%205%200%200%201%205-5z%27%20fill%3D%27%23EAF2FC%27/%3E%3Cpath%20d%3D%27M70%2030l20%2020H72a2%202%200%200%201-2-2z%27%20fill%3D%27url%28%23fold%29%27/%3E%3Cpath%20d%3D%27M40%2030h30l20%2020v40a5%205%200%200%201-5%205H40a5%205%200%200%201-5-5V35a5%205%200%200%201%205-5z%27%20fill%3D%27none%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%274%27%20stroke-linejoin%3D%27round%27/%3E%3Cpath%20d%3D%27M70%2030v18a2%202%200%200%200%202%202h18%27%20fill%3D%27none%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%274%27%20stroke-linejoin%3D%27round%27/%3E%3Cline%20x1%3D%2744%27%20y1%3D%2766%27%20x2%3D%2780%27%20y2%3D%2766%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%273.5%27%20stroke-linecap%3D%27round%27/%3E%3Cline%20x1%3D%2744%27%20y1%3D%2775%27%20x2%3D%2780%27%20y2%3D%2775%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%273.5%27%20stroke-linecap%3D%27round%27/%3E%3Cline%20x1%3D%2744%27%20y1%3D%2784%27%20x2%3D%2780%27%20y2%3D%2784%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%273.5%27%20stroke-linecap%3D%27round%27/%3E%3Cline%20x1%3D%2744%27%20y1%3D%2793%27%20x2%3D%2766%27%20y2%3D%2793%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%273.5%27%20stroke-linecap%3D%27round%27/%3E%3Cpath%20d%3D%27M92%2078l3%207.5L102%2088l-7%202.5L92%2098l-3-7.5L82%2088l7-2.5z%27%20fill%3D%27url%28%23spark%29%27/%3E%3C/svg%3E" />
 <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.29.0/babel.min.js"></script>
@@ -78,6 +79,37 @@ const Icon = {
   Mail: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>,
   Bell: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
 };
+
+function DoclyLogo({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120">
+      <defs>
+        <linearGradient id="dlogo-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#2E9DF4"/>
+          <stop offset="100%" stopColor="#1B6FC2"/>
+        </linearGradient>
+        <linearGradient id="dlogo-fold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#F4F8FD"/>
+          <stop offset="100%" stopColor="#C9DCF2"/>
+        </linearGradient>
+        <linearGradient id="dlogo-spark" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#FFE9B8"/>
+          <stop offset="100%" stopColor="#FFB020"/>
+        </linearGradient>
+      </defs>
+      <rect width="120" height="120" rx="26" fill="url(#dlogo-bg)"/>
+      <path d="M40 30h30l0 0v18a2 2 0 0 0 2 2h18v40a5 5 0 0 1-5 5H40a5 5 0 0 1-5-5V35a5 5 0 0 1 5-5z" fill="#EAF2FC"/>
+      <path d="M70 30l20 20H72a2 2 0 0 1-2-2z" fill="url(#dlogo-fold)"/>
+      <path d="M40 30h30l20 20v40a5 5 0 0 1-5 5H40a5 5 0 0 1-5-5V35a5 5 0 0 1 5-5z" fill="none" stroke="#0B1220" strokeWidth="4" strokeLinejoin="round"/>
+      <path d="M70 30v18a2 2 0 0 0 2 2h18" fill="none" stroke="#0B1220" strokeWidth="4" strokeLinejoin="round"/>
+      <line x1="44" y1="66" x2="80" y2="66" stroke="#0B1220" strokeWidth="3.5" strokeLinecap="round"/>
+      <line x1="44" y1="75" x2="80" y2="75" stroke="#0B1220" strokeWidth="3.5" strokeLinecap="round"/>
+      <line x1="44" y1="84" x2="80" y2="84" stroke="#0B1220" strokeWidth="3.5" strokeLinecap="round"/>
+      <line x1="44" y1="93" x2="66" y2="93" stroke="#0B1220" strokeWidth="3.5" strokeLinecap="round"/>
+      <path d="M92 78l3 7.5L102 88l-7 2.5L92 98l-3-7.5L82 88l7-2.5z" fill="url(#dlogo-spark)"/>
+    </svg>
+  );
+}
 
 function Docly() {
   const [session, setSession] = useState(null);
@@ -379,9 +411,7 @@ function Docly() {
       <div className="min-h-screen w-full bg-[#0B1220] text-[#E6EDF3] font-sans flex flex-col items-center justify-center px-5">
         <div className="w-full max-w-sm flex flex-col gap-4">
           <div className="flex items-center gap-2 justify-center mb-2">
-            <div className="w-8 h-8 rounded bg-[#2E9DF4] neon-glow flex items-center justify-center">
-              <Icon.File className="w-4.5 h-4.5 text-[#0B1220]" />
-            </div>
+            <DoclyLogo size={36} />
             <span className="mono font-semibold text-lg text-white">docly</span>
           </div>
           <p className="text-center text-[13px] text-[#8CA3C7] mb-1">
@@ -420,9 +450,7 @@ function Docly() {
     <div className="min-h-screen w-full bg-[#0B1220] text-[#E6EDF3] font-sans flex flex-col">
       <header className="border-b border-[#25355A] px-5 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded bg-[#2E9DF4] neon-glow flex items-center justify-center">
-            <Icon.File className="w-4 h-4 text-[#0B1220]" />
-          </div>
+          <DoclyLogo size={28} />
           <span className="mono font-semibold tracking-tight text-[15px] text-white">docly</span>
         </div>
         <div className="flex items-center gap-3">
