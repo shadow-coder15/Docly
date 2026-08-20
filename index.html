@@ -327,7 +327,7 @@ function Docly() {
       setMessages((prev) => [...prev, { role: "assistant", parts: [{ text: answer }], display: answer }]);
       if (!isPro) await persistUsage({ date: todayStr(), count: usage.count + 1 });
     } catch (e) {
-      setError("Something went wrong generating the summary. Try again.");
+      setError("Something went wrong generating the summary: " + (e.message || "unknown error"));
       setMessages([]);
     } finally {
       setLoading(false);
