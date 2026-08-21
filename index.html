@@ -194,6 +194,12 @@ function Docly() {
             return;
           }
         }
+        if (window.location.hash.includes("error")) {
+          const params = new URLSearchParams(window.location.hash.slice(1));
+          setAuthError("Google sign-in failed: " + (params.get("error_description") || params.get("error") || "unknown error"));
+          setPreAuthView("auth");
+          window.history.replaceState(null, "", window.location.pathname);
+        }
         const cached = localStorage.getItem("docly-session");
         if (cached) {
           const { access_token } = JSON.parse(cached);
