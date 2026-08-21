@@ -25,6 +25,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.29.0/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
+<!-- Added Supabase Official SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   html, body { background: #0B1220; margin: 0; padding: 0; height: 100%; color: #E6EDF3; }
   #root { min-height: 100vh; }
@@ -75,6 +77,9 @@ const DAYPASS_PRICE_PESEWAS = 200; // GHS 2.00
 const FREE_MAX_PAGES = 4;
 const FREE_DOCS_PER_DAY = 1;
 
+// Initialize official Supabase JS Client
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 function todayStr() { return new Date().toDateString(); }
 
 function estimatePageCount(binaryStr) {
@@ -82,7 +87,6 @@ function estimatePageCount(binaryStr) {
   return matches ? matches.length : null;
 }
 
-// Simple inline icon set (no external icon library needed)
 const Icon = {
   Upload: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 16V4M12 4l-4 4M12 4l4 4M4 20h16"/></svg>,
   File: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>,
@@ -176,7 +180,6 @@ function Docly() {
     const parsed = metadataFromUser(user);
     setIsPro(parsed.pro);
     setUsage(parsed.usage);
-    setAdsWatched(parsed.ads);
     setDayPassUntil(parsed.dayPassUntil);
     setSession({ access_token: accessToken, user });
   }
@@ -197,12 +200,9 @@ function Docly() {
         }
         if (window.location.hash.includes("error")) {
           const params = new URLSearchParams(window.location.hash.slice(1));
-          setAuthError("Google sign-in failed: " + (params.get("error_description") || params.get("error") || "unknown error"));
+          setAuthError("Sign-in failed: " + (params.get("error_description") || params.get("error") || "unknown error"));
           setPreAuthView("auth");
           window.history.replaceState(null, "", window.location.pathname);
-        } else if (window.location.hash || window.location.search) {
-          setAuthError("DEBUG — redirect URL was: " + window.location.href);
-          setPreAuthView("auth");
         }
         const cached = localStorage.getItem("docly-session");
         if (cached) {
@@ -275,9 +275,16 @@ function Docly() {
     handler.openIframe();
   }
 
-  function signInWithGoogle() {
-    const redirectTo = encodeURIComponent(window.location.href.split("#")[0]);
-    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
+  // UPDATED: Using Official Supabase Client SDK for Google Auth (PKCE Fix)
+  async function signInWithGoogle() {
+    setAuthError(null);
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'https://docly-topaz.vercel.app',
+      },
+    });
+    if (error) setAuthError(error.message);
   }
 
   async function handleAuth() {
@@ -314,7 +321,6 @@ function Docly() {
   function signOut() {
     setSession(null); setIsPro(false);
     setUsage({ date: todayStr(), count: 0 });
-    setAdsWatched({ date: todayStr(), count: 0 });
     resetDoc();
     localStorage.removeItem("docly-session");
   }
@@ -347,7 +353,7 @@ function Docly() {
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState(null);
   const [dayPassUntil, setDayPassUntil] = useState(null);
-  const [preAuthView, setPreAuthView] = useState("landing"); // 'landing' | 'auth'
+  const [preAuthView, setPreAuthView] = useState("landing");
 
   const dayPassActive = dayPassUntil && new Date(dayPassUntil) > new Date();
   const hasUnlimitedAccess = isPro || dayPassActive;
@@ -395,6 +401,7 @@ function Docly() {
     });
     handler.openIframe();
   }
+
   async function confirmDowngrade() {
     setIsPro(false); setShowDowngradeConfirm(false);
     await persistMetadata({ pro: false });
