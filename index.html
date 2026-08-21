@@ -4,6 +4,20 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Docly — Read the point, skip the pages</title>
+<meta name="description" content="Upload any PDF and get a clean AI summary in seconds, then ask it anything about the document." />
+<meta property="og:title" content="Docly — Read the point, skip the pages" />
+<meta property="og:description" content="Upload any PDF and get a clean AI summary in seconds, then ask it anything about the document." />
+<meta property="og:image" content="https://docly-topaz.vercel.app/og-image.png" />
+<meta property="og:url" content="https://docly-topaz.vercel.app" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Docly — Read the point, skip the pages" />
+<meta name="twitter:description" content="Upload any PDF and get a clean AI summary in seconds, then ask it anything about the document." />
+<meta name="twitter:image" content="https://docly-topaz.vercel.app/og-image.png" />
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20120%20120%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27bg%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%25%27%20stop-color%3D%27%232E9DF4%27/%3E%3Cstop%20offset%3D%27100%25%27%20stop-color%3D%27%231B6FC2%27/%3E%3C/linearGradient%3E%3ClinearGradient%20id%3D%27fold%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%25%27%20stop-color%3D%27%23F4F8FD%27/%3E%3Cstop%20offset%3D%27100%25%27%20stop-color%3D%27%23C9DCF2%27/%3E%3C/linearGradient%3E%3ClinearGradient%20id%3D%27spark%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%25%27%20stop-color%3D%27%23FFE9B8%27/%3E%3Cstop%20offset%3D%27100%25%27%20stop-color%3D%27%23FFB020%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%27120%27%20height%3D%27120%27%20rx%3D%2726%27%20fill%3D%27url%28%23bg%29%27/%3E%3Cpath%20d%3D%27M40%2030h30l0%200v18a2%202%200%200%200%202%202h18v40a5%205%200%200%201-5%205H40a5%205%200%200%201-5-5V35a5%205%200%200%201%205-5z%27%20fill%3D%27%23EAF2FC%27/%3E%3Cpath%20d%3D%27M70%2030l20%2020H72a2%202%200%200%201-2-2z%27%20fill%3D%27url%28%23fold%29%27/%3E%3Cpath%20d%3D%27M40%2030h30l20%2020v40a5%205%200%200%201-5%205H40a5%205%200%200%201-5-5V35a5%205%200%200%201%205-5z%27%20fill%3D%27none%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%274%27%20stroke-linejoin%3D%27round%27/%3E%3Cpath%20d%3D%27M70%2030v18a2%202%200%200%200%202%202h18%27%20fill%3D%27none%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%274%27%20stroke-linejoin%3D%27round%27/%3E%3Cline%20x1%3D%2744%27%20y1%3D%2766%27%20x2%3D%2780%27%20y2%3D%2766%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%273.5%27%20stroke-linecap%3D%27round%27/%3E%3Cline%20x1%3D%2744%27%20y1%3D%2775%27%20x2%3D%2780%27%20y2%3D%2775%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%273.5%27%20stroke-linecap%3D%27round%27/%3E%3Cline%20x1%3D%2744%27%20y1%3D%2784%27%20x2%3D%2780%27%20y2%3D%2784%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%273.5%27%20stroke-linecap%3D%27round%27/%3E%3Cline%20x1%3D%2744%27%20y1%3D%2793%27%20x2%3D%2766%27%20y2%3D%2793%27%20stroke%3D%27%230B1220%27%20stroke-width%3D%273.5%27%20stroke-linecap%3D%27round%27/%3E%3Cpath%20d%3D%27M92%2078l3%207.5L102%2088l-7%202.5L92%2098l-3-7.5L82%2088l7-2.5z%27%20fill%3D%27url%28%23spark%29%27/%3E%3C/svg%3E" />
 <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -59,8 +73,6 @@ const DAYPASS_PRICE_PESEWAS = 200; // GHS 2.00
 
 const FREE_MAX_PAGES = 4;
 const FREE_DOCS_PER_DAY = 1;
-const MAX_BONUS_ADS = 3;
-const AD_SECONDS = 15;
 
 function todayStr() { return new Date().toDateString(); }
 
@@ -135,9 +147,6 @@ function Docly() {
   const [chatInput, setChatInput] = useState("");
   const [isPro, setIsPro] = useState(false);
   const [usage, setUsage] = useState({ date: todayStr(), count: 0 });
-  const [adsWatched, setAdsWatched] = useState({ date: todayStr(), count: 0 });
-  const [watchingAd, setWatchingAd] = useState(false);
-  const [adSecondsLeft, setAdSecondsLeft] = useState(AD_SECONDS);
   const [showDowngradeConfirm, setShowDowngradeConfirm] = useState(false);
   const [updates, setUpdates] = useState([]);
   const [showUpdates, setShowUpdates] = useState(false);
@@ -156,8 +165,7 @@ function Docly() {
   function metadataFromUser(user) {
     const meta = user?.user_metadata || {};
     const usageM = meta.usage && meta.usage.date === todayStr() ? meta.usage : { date: todayStr(), count: 0 };
-    const adsM = meta.ads && meta.ads.date === todayStr() ? meta.ads : { date: todayStr(), count: 0 };
-    return { pro: !!meta.pro, usage: usageM, ads: adsM, dayPassUntil: meta.dayPassUntil || null };
+    return { pro: !!meta.pro, usage: usageM, dayPassUntil: meta.dayPassUntil || null };
   }
 
   async function loadSessionUser(accessToken) {
@@ -206,13 +214,12 @@ function Docly() {
     if (!session) return;
     const nextPro = partial.pro !== undefined ? partial.pro : isPro;
     const nextUsage = partial.usage !== undefined ? partial.usage : usage;
-    const nextAds = partial.ads !== undefined ? partial.ads : adsWatched;
     const nextDayPass = partial.dayPassUntil !== undefined ? partial.dayPassUntil : dayPassUntil;
     try {
       await fetch(`${SUPABASE_URL}/auth/v1/user`, {
         method: "PUT",
         headers: authHeaders(session.access_token),
-        body: JSON.stringify({ data: { pro: nextPro, usage: nextUsage, ads: nextAds, dayPassUntil: nextDayPass } }),
+        body: JSON.stringify({ data: { pro: nextPro, usage: nextUsage, dayPassUntil: nextDayPass } }),
       });
     } catch (e) {}
   }
@@ -243,7 +250,7 @@ function Docly() {
               const until = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
               setDayPassUntil(until);
               persistMetadata({ dayPassUntil: until });
-              setError((prev) => (prev === "RUSH_HOUR" ? null : prev));
+              setError((prev) => (prev === "LIMIT_REACHED" ? null : prev));
             } else {
               setPayError("Payment could not be verified. If you were charged, contact support.");
             }
@@ -303,7 +310,6 @@ function Docly() {
   }
 
   async function persistUsage(next) { setUsage(next); await persistMetadata({ usage: next }); }
-  async function persistAds(next) { setAdsWatched(next); await persistMetadata({ ads: next }); }
 
   async function loadUpdates() {
     try {
@@ -331,6 +337,7 @@ function Docly() {
   const [payLoading, setPayLoading] = useState(false);
   const [payError, setPayError] = useState(null);
   const [dayPassUntil, setDayPassUntil] = useState(null);
+  const [preAuthView, setPreAuthView] = useState("landing"); // 'landing' | 'auth'
 
   const dayPassActive = dayPassUntil && new Date(dayPassUntil) > new Date();
   const hasUnlimitedAccess = isPro || dayPassActive;
@@ -432,9 +439,8 @@ function Docly() {
         setError(`This document is about ${pageEstimate} pages. Free accounts summarize documents up to ${FREE_MAX_PAGES} pages. Upgrade to Pro for longer documents.`);
         return;
       }
-      const effectiveLimit = FREE_DOCS_PER_DAY + Math.min(adsWatched.count, MAX_BONUS_ADS);
-      if (usage.count >= effectiveLimit) {
-        setError(adsWatched.count < MAX_BONUS_ADS ? "RUSH_HOUR" : "You've used today's free documents and ad unlocks. Come back tomorrow, or upgrade to Pro.");
+      if (usage.count >= FREE_DOCS_PER_DAY) {
+        setError("LIMIT_REACHED");
         return;
       }
     }
@@ -477,22 +483,6 @@ function Docly() {
     }
   }
 
-  function startWatchingAd() {
-    setWatchingAd(true); setAdSecondsLeft(AD_SECONDS);
-    const interval = setInterval(() => {
-      setAdSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(interval);
-          setWatchingAd(false);
-          persistAds({ date: todayStr(), count: adsWatched.count + 1 });
-          setError((prev) => (prev === "RUSH_HOUR" ? null : prev));
-          return AD_SECONDS;
-        }
-        return s - 1;
-      });
-    }, 1000);
-  }
-
   const docsLeftToday = hasUnlimitedAccess ? "Unlimited" : Math.max(0, FREE_DOCS_PER_DAY - usage.count);
 
   if (!ready) {
@@ -500,8 +490,87 @@ function Docly() {
   }
 
   if (!session) {
+    if (preAuthView === "landing") {
+      return (
+        <div className="min-h-screen w-full bg-[#0B1220] text-[#E6EDF3] font-sans">
+          <style>{`
+            .mono { font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace; }
+            .neon-glow { box-shadow: 0 0 12px rgba(46,157,244,0.55), 0 0 2px rgba(46,157,244,0.85); }
+            .neon-text { text-shadow: 0 0 8px rgba(46,157,244,0.6); }
+          `}</style>
+
+          <header className="max-w-4xl mx-auto px-5 py-5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DoclyLogo size={28} />
+              <span className="mono font-semibold text-[15px] text-white">docly</span>
+            </div>
+            <button onClick={() => setPreAuthView("auth")} className="mono text-[12px] px-3 py-1.5 rounded border border-[#2E9DF4] text-[#2E9DF4] hover:bg-[#2E9DF4]/10 transition-colors">
+              SIGN IN
+            </button>
+          </header>
+
+          <main className="max-w-4xl mx-auto px-5 pt-10 pb-16 flex flex-col items-center text-center">
+            <span className="mono text-[11px] text-[#2E9DF4] neon-text tracking-widest mb-3">DOCUMENT → GIST</span>
+            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-4 text-white max-w-2xl">Read the point, skip the pages.</h1>
+            <p className="text-[#8CA3C7] mb-8 max-w-lg text-[15px]">Drop in any PDF — a textbook chapter, a contract, a research paper. Docly gives you a clean summary in seconds, then answers your questions about it.</p>
+            <button onClick={() => setPreAuthView("auth")} className="mono text-sm bg-[#2E9DF4] neon-glow text-[#0B1220] rounded-lg px-8 py-3.5 font-semibold hover:opacity-90 transition-opacity mb-16">
+              GET STARTED FREE
+            </button>
+
+            <div className="grid sm:grid-cols-3 gap-4 w-full max-w-3xl mb-16 text-left">
+              <div className="bg-[#16213A] border border-[#25355A] rounded-xl p-5">
+                <div className="w-9 h-9 rounded-lg bg-[#2E9DF4]/15 flex items-center justify-center mb-3">
+                  <Icon.Upload className="w-4.5 h-4.5 text-[#2E9DF4]" />
+                </div>
+                <div className="mono text-[12px] text-white mb-1">1. UPLOAD</div>
+                <p className="text-[13px] text-[#8CA3C7]">Drop in any PDF from your device.</p>
+              </div>
+              <div className="bg-[#16213A] border border-[#25355A] rounded-xl p-5">
+                <div className="w-9 h-9 rounded-lg bg-[#2E9DF4]/15 flex items-center justify-center mb-3">
+                  <Icon.Sparkles className="w-4.5 h-4.5 text-[#2E9DF4]" />
+                </div>
+                <div className="mono text-[12px] text-white mb-1">2. SUMMARIZE</div>
+                <p className="text-[13px] text-[#8CA3C7]">Get the key points in seconds, no fluff.</p>
+              </div>
+              <div className="bg-[#16213A] border border-[#25355A] rounded-xl p-5">
+                <div className="w-9 h-9 rounded-lg bg-[#2E9DF4]/15 flex items-center justify-center mb-3">
+                  <Icon.Send className="w-4.5 h-4.5 text-[#2E9DF4]" />
+                </div>
+                <div className="mono text-[12px] text-white mb-1">3. ASK</div>
+                <p className="text-[13px] text-[#8CA3C7]">Chat with the document for anything it missed.</p>
+              </div>
+            </div>
+
+            <h2 className="mono text-[13px] text-[#8CA3C7] tracking-widest mb-5">PRICING</h2>
+            <div className="grid sm:grid-cols-3 gap-4 w-full max-w-3xl text-left">
+              <div className="bg-[#16213A] border border-[#25355A] rounded-xl p-5 flex flex-col">
+                <div className="mono text-[12px] text-[#8CA3C7] mb-1">FREE</div>
+                <div className="text-2xl font-semibold text-white mb-3">GHS 0</div>
+                <p className="text-[13px] text-[#8CA3C7] flex-1">1 document a day, up to 4 pages.</p>
+              </div>
+              <div className="bg-[#16213A] border border-[#25355A] rounded-xl p-5 flex flex-col">
+                <div className="mono text-[12px] text-[#8CA3C7] mb-1">24-HOUR PASS</div>
+                <div className="text-2xl font-semibold text-white mb-3">GHS 2</div>
+                <p className="text-[13px] text-[#8CA3C7] flex-1">Unlimited documents for a full day.</p>
+              </div>
+              <div className="bg-[#16213A] border border-[#2E9DF4] rounded-xl p-5 flex flex-col relative">
+                <div className="absolute -top-2.5 right-4 mono text-[10px] bg-[#2E9DF4] text-[#0B1220] px-2 py-0.5 rounded font-semibold">POPULAR</div>
+                <div className="mono text-[12px] text-[#8CA3C7] mb-1">PRO</div>
+                <div className="text-2xl font-semibold text-white mb-3">GHS 30<span className="text-sm text-[#8CA3C7] font-normal">/mo</span></div>
+                <p className="text-[13px] text-[#8CA3C7] flex-1">Unlimited documents, longer docs, no ads.</p>
+              </div>
+            </div>
+          </main>
+
+          <footer className="border-t border-[#25355A] py-6 text-center">
+            <span className="mono text-[11px] text-[#8CA3C7]">Docly v1.0 — built for readers who don't have time to read it all.</span>
+          </footer>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen w-full bg-[#0B1220] text-[#E6EDF3] font-sans flex flex-col items-center justify-center px-5">
+        <button onClick={() => setPreAuthView("landing")} className="absolute top-5 left-5 text-[#8CA3C7] hover:text-[#E6EDF3] mono text-[12px]">← BACK</button>
         <div className="w-full max-w-sm flex flex-col gap-4">
           <div className="flex items-center gap-2 justify-center mb-2">
             <DoclyLogo size={36} />
@@ -582,7 +651,7 @@ function Docly() {
               <div className="text-[11px] text-[#8CA3C7]">Free: {FREE_MAX_PAGES} pages, {FREE_DOCS_PER_DAY} document a day</div>
               <input ref={fileInputRef} type="file" accept="application/pdf" onChange={(e) => handleFile(e.target.files?.[0])} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
             </div>
-            {error && error !== "RUSH_HOUR" && <div className="mt-4 text-[13px] text-[#FF5C5C]">{error}</div>}
+            {error && error !== "LIMIT_REACHED" && <div className="mt-4 text-[13px] text-[#FF5C5C]">{error}</div>}
           </div>
         ) : (
           <div className="w-full max-w-2xl flex flex-col gap-4">
@@ -600,27 +669,22 @@ function Docly() {
               <button onClick={resetDoc} className="text-[#8CA3C7] hover:text-[#E6EDF3] shrink-0"><Icon.X className="w-4 h-4" /></button>
             </div>
 
-            {messages.length === 0 && !loading && error !== "RUSH_HOUR" && (
+            {messages.length === 0 && !loading && error !== "LIMIT_REACHED" && (
               <button onClick={startSummary} className="mono text-sm bg-[#2E9DF4] neon-glow text-[#0B1220] rounded-lg py-3 flex items-center justify-center gap-2 font-semibold hover:opacity-90 transition-opacity">
                 <Icon.Sparkles className="w-4 h-4" /> SUMMARIZE
               </button>
             )}
 
-            {error === "RUSH_HOUR" && (
-              <div className="border border-[#FFB020]/40 bg-[#FFB020]/5 rounded-lg p-4 flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-[#FFB020] mono text-[12px]"><Icon.Zap className="w-3.5 h-3.5" /> RUSH HOUR MODE</div>
-                <p className="text-[13px] text-[#8CA3C7]">You've hit today's free limit. Watch a quick ad to unlock one more summary — {MAX_BONUS_ADS - adsWatched.count} of {MAX_BONUS_ADS} unlocks left today.</p>
-                <div className="flex gap-2">
-                  <button onClick={startWatchingAd} className="mono text-[13px] flex-1 bg-[#FFB020] text-[#0B1220] rounded-lg py-2.5 flex items-center justify-center gap-2 font-semibold hover:opacity-90 transition-opacity">
-                    <Icon.Play className="w-3.5 h-3.5" /> WATCH AD ({AD_SECONDS}s)
-                  </button>
-                  <button onClick={buyDayPass} disabled={payLoading} className="mono text-[13px] flex-1 border border-[#8CA3C7] text-[#8CA3C7] rounded-lg py-2.5 hover:bg-[#8CA3C7]/10 transition-colors disabled:opacity-50">GHS 2 FOR 24H</button>
-                </div>
-                <button onClick={togglePro} className="mono text-[13px] w-full border border-[#2E9DF4] text-[#2E9DF4] rounded-lg py-2.5 hover:bg-[#2E9DF4]/10 transition-colors">GO PRO INSTEAD</button>
+            {error === "LIMIT_REACHED" && (
+              <div className="border border-[#2E9DF4]/40 bg-[#2E9DF4]/5 rounded-lg p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-2 text-[#2E9DF4] mono text-[12px]"><Icon.Zap className="w-3.5 h-3.5" /> DAILY LIMIT REACHED</div>
+                <p className="text-[13px] text-[#8CA3C7]">You've used today's free document. Unlock more right now, or come back tomorrow.</p>
+                <button onClick={buyDayPass} disabled={payLoading} className="mono text-[13px] w-full bg-[#2E9DF4] text-[#0B1220] rounded-lg py-2.5 font-semibold hover:opacity-90 transition-opacity disabled:opacity-50">GHS 2 FOR 24 HOURS UNLIMITED</button>
+                <button onClick={togglePro} className="mono text-[13px] w-full border border-[#2E9DF4] text-[#2E9DF4] rounded-lg py-2.5 hover:bg-[#2E9DF4]/10 transition-colors">OR GO PRO — GHS 30/MONTH</button>
               </div>
             )}
 
-            {error && error !== "RUSH_HOUR" && <div className="text-[13px] text-[#FF5C5C]">{error}</div>}
+            {error && error !== "LIMIT_REACHED" && <div className="text-[13px] text-[#FF5C5C]">{error}</div>}
 
             {(messages.length > 0 || loading) && (
               <div ref={scrollRef} className="flex flex-col gap-4 bg-[#16213A] border border-[#25355A] rounded-lg p-4 max-h-[50vh] overflow-y-auto">
@@ -650,26 +714,12 @@ function Docly() {
 
             {!isPro && messages.length > 0 && (
               <div className="mono text-[11px] text-[#8CA3C7] flex items-center gap-1.5 justify-center">
-                <Icon.Zap className="w-3 h-3 text-[#FFB020]" /> Pro removes the daily limit and the 4-page cap
+                <Icon.Zap className="w-3 h-3 text-[#FFB020]" /> Pro removes the daily limit
               </div>
             )}
           </div>
         )}
       </main>
-
-      {watchingAd && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
-          <div className="bg-[#16213A] border border-[#25355A] rounded-xl p-8 w-full max-w-sm text-center flex flex-col items-center gap-4">
-            <div className="mono text-[11px] text-[#8CA3C7] tracking-widest">ADVERTISEMENT</div>
-            <div className="w-full aspect-video bg-[#0B1220] rounded-lg border border-[#25355A] flex items-center justify-center relative overflow-hidden">
-              <Icon.Play className="w-8 h-8 text-[#25355A]" />
-              <div className="scan-line absolute left-0 right-0 h-8 bg-gradient-to-b from-transparent via-[#FFB020]/40 to-transparent" />
-            </div>
-            <div className="mono text-2xl text-[#FFB020]">{adSecondsLeft}</div>
-            <p className="text-[12px] text-[#8CA3C7]">Unlocking your bonus summary…</p>
-          </div>
-        </div>
-      )}
 
       {showUpdates && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
