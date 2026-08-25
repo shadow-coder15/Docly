@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Docly — Read the point, skip the pages</title>
 <meta name="description" content="Upload any PDF and get a clean AI summary in seconds, then ask it anything about the document." />
+<meta name="google-site-verification" content="AyTTpskxlD7-3pSizYkSdUoZSedRuS0THUiL7j6cy5c" />
 <meta property="og:title" content="Docly — Read the point, skip the pages" />
 <meta property="og:description" content="Upload any PDF and get a clean AI summary in seconds, then ask it anything about the document." />
 <meta property="og:image" content="https://docly-topaz.vercel.app/og-image.png" />
@@ -25,7 +26,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.29.0/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
-<!-- Added Supabase Official SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   html, body { background: #0B1220; margin: 0; padding: 0; height: 100%; color: #E6EDF3; }
@@ -66,18 +66,16 @@
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useRef } = React;
 
-// ---- CONFIG: your real project values ----
 const SUPABASE_URL = "https://ukjwqevoqsdfnmylxswt.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_1mWGhz0AjDtRhN8rOvx7FA_tZ8Ljb6L";
 const PAYSTACK_PUBLIC_KEY = "pk_test_17b9fd74156e85b11f2235a62df6189a10bdcf9c";
 const PAYSTACK_PLAN_CODE = "PLN_vpq9g6959dae6ns";
-const PRO_PRICE_PESEWAS = 3000; // GHS 30.00
-const DAYPASS_PRICE_PESEWAS = 200; // GHS 2.00
+const PRO_PRICE_PESEWAS = 3000;
+const DAYPASS_PRICE_PESEWAS = 200;
 
 const FREE_MAX_PAGES = 4;
 const FREE_DOCS_PER_DAY = 1;
 
-// Initialize official Supabase JS Client
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function todayStr() { return new Date().toDateString(); }
@@ -156,8 +154,15 @@ function Docly() {
   const [updates, setUpdates] = useState([]);
   const [showUpdates, setShowUpdates] = useState(false);
   const [hasUnseenUpdate, setHasUnseenUpdate] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
+  const [payError, setPayError] = useState(null);
+  const [dayPassUntil, setDayPassUntil] = useState(null);
+  const [preAuthView, setPreAuthView] = useState("landing");
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
+
+  const dayPassActive = dayPassUntil && new Date(dayPassUntil) > new Date();
+  const hasUnlimitedAccess = isPro || dayPassActive;
 
   function authHeaders(token) {
     return {
@@ -187,6 +192,13 @@ function Docly() {
   useEffect(() => {
     (async () => {
       try {
+        const { data: sdkData } = await supabaseClient.auth.getSession();
+        if (sdkData?.session?.access_token) {
+          await loadSessionUser(sdkData.session.access_token);
+          setReady(true);
+          return;
+        }
+
         if (window.location.hash.includes("access_token")) {
           const params = new URLSearchParams(window.location.hash.slice(1));
           const token = params.get("access_token");
@@ -198,12 +210,13 @@ function Docly() {
             return;
           }
         }
-        if (window.location.hash.includes("error")) {
-          const params = new URLSearchParams(window.location.hash.slice(1));
+        if (window.location.hash.includes("error") || window.location.search.includes("error")) {
+          const params = new URLSearchParams(window.location.hash.slice(1) || window.location.search.slice(1));
           setAuthError("Sign-in failed: " + (params.get("error_description") || params.get("error") || "unknown error"));
           setPreAuthView("auth");
           window.history.replaceState(null, "", window.location.pathname);
         }
+
         const cached = localStorage.getItem("docly-session");
         if (cached) {
           const { access_token } = JSON.parse(cached);
@@ -214,6 +227,15 @@ function Docly() {
       }
       setReady(true);
     })();
+
+    const { data: listener } = supabaseClient.auth.onAuthStateChange((event, sdkSession) => {
+      if (sdkSession?.access_token) {
+        loadSessionUser(sdkSession.access_token);
+      }
+    });
+    return () => {
+      listener?.subscription?.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -275,89 +297,6 @@ function Docly() {
     handler.openIframe();
   }
 
-  // UPDATED: Using Official Supabase Client SDK for Google Auth (PKCE Fix)
-  async function signInWithGoogle() {
-    setAuthError(null);
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: 'https://docly-topaz.vercel.app',
-      },
-    });
-    if (error) setAuthError(error.message);
-  }
-
-  async function handleAuth() {
-    setAuthError(null); setAuthNotice(null);
-    if (!authEmail.trim() || !authPassword.trim()) { setAuthError("Enter your email and a password."); return; }
-    if (authPassword.length < 6) { setAuthError("Password must be at least 6 characters."); return; }
-    setAuthLoading(true);
-    try {
-      if (authMode === "signup") {
-        const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ email: authEmail.trim(), password: authPassword }) });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.msg || data.error_description || "Sign up failed");
-        if (data.access_token) {
-          localStorage.setItem("docly-session", JSON.stringify({ access_token: data.access_token }));
-          await loadSessionUser(data.access_token);
-        } else {
-          setAuthNotice("Account created — check your email to confirm it, then sign in.");
-          setAuthMode("signin");
-        }
-      } else {
-        const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ email: authEmail.trim(), password: authPassword }) });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.msg || data.error_description || "Sign in failed");
-        localStorage.setItem("docly-session", JSON.stringify({ access_token: data.access_token }));
-        await loadSessionUser(data.access_token);
-      }
-    } catch (e) {
-      setAuthError(e.message || "Something went wrong.");
-    } finally {
-      setAuthLoading(false);
-    }
-  }
-
-  function signOut() {
-    setSession(null); setIsPro(false);
-    setUsage({ date: todayStr(), count: 0 });
-    resetDoc();
-    localStorage.removeItem("docly-session");
-  }
-
-  async function persistUsage(next) { setUsage(next); await persistMetadata({ usage: next }); }
-
-  async function loadUpdates() {
-    try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/updates?select=id,message,created_at&order=created_at.desc&limit=20`, {
-        headers: authHeaders(session?.access_token),
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setUpdates(data);
-      const lastSeen = localStorage.getItem("docly-updates-seen");
-      if (data.length > 0 && data[0].id.toString() !== lastSeen) setHasUnseenUpdate(true);
-    } catch (e) {}
-  }
-
-  useEffect(() => {
-    if (session) loadUpdates();
-  }, [session]);
-
-  function openUpdates() {
-    setShowUpdates(true);
-    setHasUnseenUpdate(false);
-    if (updates.length > 0) localStorage.setItem("docly-updates-seen", updates[0].id.toString());
-  }
-
-  const [payLoading, setPayLoading] = useState(false);
-  const [payError, setPayError] = useState(null);
-  const [dayPassUntil, setDayPassUntil] = useState(null);
-  const [preAuthView, setPreAuthView] = useState("landing");
-
-  const dayPassActive = dayPassUntil && new Date(dayPassUntil) > new Date();
-  const hasUnlimitedAccess = isPro || dayPassActive;
-
   async function togglePro() {
     if (isPro) {
       setShowDowngradeConfirm(true);
@@ -405,6 +344,79 @@ function Docly() {
   async function confirmDowngrade() {
     setIsPro(false); setShowDowngradeConfirm(false);
     await persistMetadata({ pro: false });
+  }
+
+  async function signInWithGoogle() {
+    setAuthError(null);
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) setAuthError(error.message);
+  }
+
+  async function handleAuth() {
+    setAuthError(null); setAuthNotice(null);
+    if (!authEmail.trim() || !authPassword.trim()) { setAuthError("Enter your email and a password."); return; }
+    if (authPassword.length < 6) { setAuthError("Password must be at least 6 characters."); return; }
+    setAuthLoading(true);
+    try {
+      if (authMode === "signup") {
+        const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ email: authEmail.trim(), password: authPassword }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.msg || data.error_description || "Sign up failed");
+        if (data.access_token) {
+          localStorage.setItem("docly-session", JSON.stringify({ access_token: data.access_token }));
+          await loadSessionUser(data.access_token);
+        } else {
+          setAuthNotice("Account created — check your email to confirm it, then sign in.");
+          setAuthMode("signin");
+        }
+      } else {
+        const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, { method: "POST", headers: authHeaders(), body: JSON.stringify({ email: authEmail.trim(), password: authPassword }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.msg || data.error_description || "Sign in failed");
+        localStorage.setItem("docly-session", JSON.stringify({ access_token: data.access_token }));
+        await loadSessionUser(data.access_token);
+      }
+    } catch (e) {
+      setAuthError(e.message || "Something went wrong.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function signOut() {
+    setSession(null); setIsPro(false);
+    setUsage({ date: todayStr(), count: 0 });
+    resetDoc();
+    localStorage.removeItem("docly-session");
+    try { await supabaseClient.auth.signOut(); } catch (e) {}
+  }
+
+  async function persistUsage(next) { setUsage(next); await persistMetadata({ usage: next }); }
+
+  async function loadUpdates() {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/updates?select=id,message,created_at&order=created_at.desc&limit=20`, {
+        headers: authHeaders(session?.access_token),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setUpdates(data);
+      const lastSeen = localStorage.getItem("docly-updates-seen");
+      if (data.length > 0 && data[0].id.toString() !== lastSeen) setHasUnseenUpdate(true);
+    } catch (e) {}
+  }
+
+  useEffect(() => {
+    if (session) loadUpdates();
+  }, [session]);
+
+  function openUpdates() {
+    setShowUpdates(true);
+    setHasUnseenUpdate(false);
+    if (updates.length > 0) localStorage.setItem("docly-updates-seen", updates[0].id.toString());
   }
 
   function resetDoc() {
