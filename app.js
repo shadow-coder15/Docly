@@ -701,6 +701,83 @@ function Docly() {
       setLoading(false);
     }
   }
+  function buildExportText() {
+    const title = file ? file.name : "Docly Summary";
+    let text = `Docly — ${title}\n${new Date().toLocaleDateString()}\n\n`;
+    messages.forEach(m => {
+      text += (m.role === "user" ? "You: " : "Docly: ") + m.display + "\n\n";
+    });
+    return text;
+  }
+  function exportFileName(ext) {
+    const base = file ? file.name.replace(/\.pdf$/i, "") : "docly-summary";
+    return `${base}-docly.${ext}`;
+  }
+  function exportAsTxt() {
+    const blob = new Blob([buildExportText()], {
+      type: "text/plain"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = exportFileName("txt");
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  function exportAsPdf() {
+    if (!window.jspdf) {
+      setError("PDF export isn't ready yet — try again in a moment.");
+      return;
+    }
+    const {
+      jsPDF
+    } = window.jspdf;
+    const doc = new jsPDF();
+    const marginLeft = 14;
+    let y = 20;
+    doc.setFontSize(16);
+    doc.text("Docly Summary", marginLeft, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    doc.text(`${file ? file.name : ""} — ${new Date().toLocaleDateString()}`, marginLeft, y);
+    y += 10;
+    doc.setTextColor(20);
+    messages.forEach(m => {
+      doc.setFontSize(11);
+      const prefix = m.role === "user" ? "You: " : "Docly: ";
+      const lines = doc.splitTextToSize(prefix + m.display, 180);
+      lines.forEach(line => {
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(line, marginLeft, y);
+        y += 6;
+      });
+      y += 4;
+    });
+    doc.save(exportFileName("pdf"));
+  }
+  function exportAsWord() {
+    const bodyHtml = messages.map(m => `<p><strong>${m.role === "user" ? "You" : "Docly"}:</strong> ${m.display.replace(/\n/g, "<br/>")}</p>`).join("");
+    const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>Docly Summary</title></head>
+<body>
+<h2>Docly — ${file ? file.name : "Summary"}</h2>
+<p style="color:#888;font-size:12px;">${new Date().toLocaleDateString()}</p>
+${bodyHtml}
+</body></html>`;
+    const blob = new Blob(["\ufeff", html], {
+      type: "application/msword"
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = exportFileName("doc");
+    a.click();
+    URL.revokeObjectURL(url);
+  }
   async function sendQuestion() {
     const q = chatInput.trim();
     if (!q || loading) return;
@@ -1076,7 +1153,24 @@ function Docly() {
     className: "mono text-[11px] text-[#8CA3C7] flex items-center gap-1.5 justify-center"
   }, /*#__PURE__*/React.createElement(Icon.Zap, {
     className: "w-3 h-3 text-[#FFB020]"
-  }), " Pro removes the daily limit"))), showUpdates && /*#__PURE__*/React.createElement("div", {
+  }), " Pro removes the daily limit"), messages.length > 0 && hasUnlimitedAccess && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 justify-center"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "mono text-[10px] text-[#8CA3C7]"
+  }, "EXPORT:"), /*#__PURE__*/React.createElement("button", {
+    onClick: exportAsTxt,
+    className: "mono text-[11px] px-2.5 py-1 rounded border border-[#25355A] text-[#8CA3C7] hover:text-[#E6EDF3] hover:border-[#2E9DF4]/60 transition-colors"
+  }, ".TXT"), /*#__PURE__*/React.createElement("button", {
+    onClick: exportAsPdf,
+    className: "mono text-[11px] px-2.5 py-1 rounded border border-[#25355A] text-[#8CA3C7] hover:text-[#E6EDF3] hover:border-[#2E9DF4]/60 transition-colors"
+  }, ".PDF"), /*#__PURE__*/React.createElement("button", {
+    onClick: exportAsWord,
+    className: "mono text-[11px] px-2.5 py-1 rounded border border-[#25355A] text-[#8CA3C7] hover:text-[#E6EDF3] hover:border-[#2E9DF4]/60 transition-colors"
+  }, ".DOC")), messages.length > 0 && !hasUnlimitedAccess && /*#__PURE__*/React.createElement("div", {
+    className: "mono text-[11px] text-[#8CA3C7] flex items-center gap-1.5 justify-center"
+  }, /*#__PURE__*/React.createElement(Icon.Zap, {
+    className: "w-3 h-3 text-[#FFB020]"
+  }), " Export as PDF, Word, or text with Pro"))), showUpdates && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-[#16213A] border border-[#25355A] rounded-xl p-5 w-full max-w-sm max-h-[70vh] flex flex-col gap-3"
