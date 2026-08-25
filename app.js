@@ -1,4 +1,4 @@
-const {
+Const {
   useState,
   useEffect,
   useRef
@@ -843,7 +843,7 @@ ${bodyHtml}
         className: "text-4xl sm:text-5xl font-semibold tracking-tight mb-4 text-white max-w-2xl"
       }, "Read the point, skip the pages."), /*#__PURE__*/React.createElement("p", {
         className: "text-[#8CA3C7] mb-8 max-w-lg text-[15px]"
-      }, "Drop in any PDF — a textbook chapter, a contract, a research paper. Docly gives you a clean summary in seconds, then answers your questions about it."), /*#__PURE__*/React.createElement("button", {
+      }, "Upload any PDF — from textbook chapters and research papers to contracts. Docly summarizes the content in seconds and helps you understand it by answering your questions."), /*#__PURE__*/React.createElement("button", {
         onClick: () => setPreAuthView("auth"),
         className: "mono text-sm bg-[#2E9DF4] neon-glow text-[#0B1220] rounded-lg px-8 py-3.5 font-semibold hover:opacity-90 transition-opacity mb-16"
       }, "GET STARTED FREE"), /*#__PURE__*/React.createElement("div", {
