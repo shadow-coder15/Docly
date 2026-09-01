@@ -3,65 +3,90 @@ module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "Server is missing GEMINI_API_KEY." });
+  if (!apiKey) {
+    res.status(500).json({ error: "Server is missing GEMINI_API_KEY. Add it in Vercel project settings." });
+    return;
+  }
 
   try {
-    const { contents } = req.body || {};
-    if (!Array.isArray(contents) || contents.length === 0) {
-      return res.status(400).json({ error: "Missing contents array." });
+    const { contents, mode } = req.body;
+    if (!contents || !Array.isArray(contents)) {
+      res.status(400).json({ error: "Missing contents array" });
+      return;
     }
 
-    const model = process.env.GEMINI_MODEL || "gemini-3.6-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const model = "gemini-3.6-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-    const systemText = `
-You are Docly, a document understanding assistant.
-For a NEW document summary, return ONLY valid JSON with this exact shape:
+    const identityRule = "You are Docly's AI, a document summarizing and Q&A assistant built into the Docly app. If asked what model you are, who made you, or what AI you're powered by, say you are Docly's AI — never name Google, Gemini, or any underlying provider.";
+
+    const isSummary = mode === "summary";
+
+    const systemText = isSummary
+      ? `${identityRule} You are producing an initial document summary. Return ONLY valid JSON matching this exact shape, no markdown, no extra text:
 {
-  "gist": {
-    "title": "short document title",
-    "summary": "2-4 sentence plain-English overview",
-    "points": ["5-8 concise key points"],
-    "important": ["0-5 important risks, obligations, caveats or things to remember"],
-    "tags": ["3-6 short topic tags"]
-  }
-}
-For a follow-up question, answer normally as concise plain text.
-Never mention the underlying AI provider or model. Ground answers in the supplied document/context and say when the document does not contain enough information.
-`.trim();
+  "title": "short document title",
+  "summary": "a 2-4 sentence plain-English TL;DR",
+  "points": ["5-8 concise key points as plain strings, no markdown bullets or asterisks"],
+  "important": ["0-5 important caveats, risks, or things to remember; omit if none apply"],
+  "tags": ["3-6 short topic tags, no # symbol"]
+}`
+      : `${identityRule} Otherwise, focus on the user's document and questions and answer in plain, conversational text.`;
 
-    const payload = {
+    const requestBody = {
       contents,
       systemInstruction: { parts: [{ text: systemText }] },
-      generationConfig: {
-        temperature: 0.25,
-        responseMimeType: "application/json"
-      }
     };
+    if (isSummary) {
+      requestBody.generationConfig = { responseMimeType: "application/json" };
+    }
 
-    const r = await fetch(url, {
+    const geminiRes = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(requestBody),
     });
 
-    const data = await r.json();
-    if (!r.ok) return res.status(r.status).json({ error: data.error?.message || "AI request failed." });
+    const data = await geminiRes.json();
 
-    const text = data.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("\n").trim();
-    if (!text) return res.status(502).json({ error: "Empty response from AI." });
+    if (!geminiRes.ok) {
+      res.status(geminiRes.status).json({ error: data.error?.message || "Gemini request failed" });
+      return;
+    }
 
-    try {
-      const parsed = JSON.parse(text);
-      if (parsed.gist) return res.status(200).json(parsed);
-    } catch (_) {}
+    const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("\n").trim();
 
-    return res.status(200).json({ text });
+    if (!text) {
+      res.status(502).json({ error: "Empty response from Gemini" });
+      return;
+    }
+
+    if (isSummary) {
+      try {
+        const gist = JSON.parse(text);
+        if (gist && typeof gist === "object") {
+          res.status(200).json({ gist });
+          return;
+        }
+      } catch (e) {
+        // Malformed JSON from the model — fall through and return raw text
+        // so the frontend can degrade gracefully instead of failing outright.
+      }
+    }
+
+    res.status(200).json({ text });
   } catch (err) {
-    return res.status(500).json({ error: err.message || "Unexpected server error." });
+    res.status(500).json({ error: err.message || "Unexpected server error" });
   }
 };
