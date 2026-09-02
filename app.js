@@ -19,6 +19,61 @@ function estimatePageCount(binaryStr) {
   const matches = binaryStr.match(/\/Type\s*\/Page(?!s)/g);
   return matches ? matches.length : null;
 }
+
+// Safety-net renderer: converts a small subset of stray markdown that
+// occasionally slips through the AI's plain-text instruction — **bold**
+// and "- "/"* " bullet lines — into real React elements. Never uses
+// dangerouslySetInnerHTML, so this stays safe against injected HTML.
+function stripMarkdown(str) {
+  return String(str || "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/^[-*]\s+/gm, "")
+    .replace(/^#+\s+/gm, "")
+    .replace(/`/g, "");
+}
+function renderInline(text, keyPrefix) {
+  const str = String(text || "");
+  const regex = /\*\*(.+?)\*\*/g;
+  const out = [];
+  let lastIndex = 0, match, i = 0;
+  while ((match = regex.exec(str)) !== null) {
+    if (match.index > lastIndex) out.push(str.slice(lastIndex, match.index));
+    out.push(/*#__PURE__*/React.createElement("strong", { key: `${keyPrefix}-b${i++}` }, match[1]));
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < str.length) out.push(str.slice(lastIndex));
+  return out;
+}
+function renderMarkdownBlock(text, keyPrefix) {
+  const lines = String(text || "").split(/\n/);
+  const elements = [];
+  let currentList = [];
+  let key = 0;
+  function flushList() {
+    if (currentList.length) {
+      elements.push(
+        /*#__PURE__*/React.createElement("ul", { key: `${keyPrefix}-ul${key++}`, className: "list-disc pl-5 space-y-1" },
+          currentList.map((l, i) => /*#__PURE__*/React.createElement("li", { key: i }, renderInline(l, `${keyPrefix}-li${i}`)))
+        )
+      );
+      currentList = [];
+    }
+  }
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    const bulletMatch = trimmed.match(/^[-*]\s+(.*)/);
+    if (bulletMatch) {
+      currentList.push(bulletMatch[1]);
+    } else if (trimmed === "") {
+      flushList();
+    } else {
+      flushList();
+      elements.push(/*#__PURE__*/React.createElement("p", { key: `${keyPrefix}-p${key++}`, className: "mb-1 last:mb-0" }, renderInline(trimmed, `${keyPrefix}-p${key}`)));
+    }
+  });
+  flushList();
+  return elements;
+}
 const Icon = {
   Upload: p => /*#__PURE__*/React.createElement("svg", {
     ...p,
@@ -266,6 +321,7 @@ function Docly() {
   const [base64Data, setBase64Data] = useState(null);
   const [pageEstimate, setPageEstimate] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [gist, setGist] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [chatInput, setChatInput] = useState("");
@@ -604,6 +660,7 @@ function Docly() {
     setBase64Data(null);
     setPageEstimate(null);
     setMessages([]);
+    setGist(null);
     setError(null);
     setChatInput("");
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -634,19 +691,22 @@ function Docly() {
     e.preventDefault();
     handleFile(e.dataTransfer.files?.[0]);
   }
-  async function callBackend(contents) {
+  async function callBackend(contents, mode) {
     const res = await fetch("/api/summarize", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
+      body: JSON.stringify(mode ? {
+        contents,
+        mode
+      } : {
         contents
       })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Request failed");
-    return data.text;
+    return data;
   }
   function toGeminiHistory(msgs) {
     return msgs.map(m => ({
@@ -667,46 +727,81 @@ function Docly() {
       }
     }
     setLoading(true);
+    setGist(null);
+    setMessages([]);
     const parts = [{
       inlineData: {
         mimeType: "application/pdf",
         data: base64Data
       }
     }, {
-      text: "Summarize this document. Open with one sentence on what it is, then give the key points as short bullet items. Keep it tight and skimmable."
+      text: "Summarize this document."
     }];
-    const userMsg = {
+    const requestContents = [{
       role: "user",
-      parts,
-      display: `Uploaded: ${file.name}`
-    };
-    setMessages([userMsg]);
+      parts
+    }];
     try {
-      const answer = await callBackend(toGeminiHistory([userMsg]));
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        parts: [{
-          text: answer
-        }],
-        display: answer
-      }]);
+      const data = await callBackend(requestContents, "summary");
+      if (data.gist) {
+        setGist({
+          title: data.gist.title || file.name,
+          summary: data.gist.summary || "",
+          points: Array.isArray(data.gist.points) ? data.gist.points : [],
+          important: Array.isArray(data.gist.important) ? data.gist.important : [],
+          tags: Array.isArray(data.gist.tags) ? data.gist.tags : []
+        });
+      } else {
+        // Graceful fallback if the model didn't return valid JSON —
+        // still show something useful rather than failing outright.
+        setGist({
+          title: file.name,
+          summary: data.text || "Summary unavailable.",
+          points: [],
+          important: [],
+          tags: []
+        });
+      }
       if (!isPro && !dayPassActive) await persistUsage({
         date: todayStr(),
         count: usage.count + 1
       });
     } catch (e) {
       setError("Something went wrong generating the summary: " + (e.message || "unknown error"));
-      setMessages([]);
+      setGist(null);
     } finally {
       setLoading(false);
     }
   }
   function buildExportText() {
-    const title = file ? file.name : "Docly Summary";
+    const title = gist ? stripMarkdown(gist.title) : file ? file.name : "Docly Summary";
     let text = `Docly — ${title}\n${new Date().toLocaleDateString()}\n\n`;
-    messages.forEach(m => {
-      text += (m.role === "user" ? "You: " : "Docly: ") + m.display + "\n\n";
-    });
+    if (gist) {
+      text += `TL;DR\n${stripMarkdown(gist.summary)}\n\n`;
+      if (gist.points.length) {
+        text += "KEY POINTS\n";
+        gist.points.forEach((p, i) => {
+          text += `${i + 1}. ${stripMarkdown(p)}\n`;
+        });
+        text += "\n";
+      }
+      if (gist.important.length) {
+        text += "IMPORTANT TO KNOW\n";
+        gist.important.forEach(p => {
+          text += `• ${stripMarkdown(p)}\n`;
+        });
+        text += "\n";
+      }
+      if (gist.tags.length) {
+        text += `TAGS: ${gist.tags.join(", ")}\n\n`;
+      }
+    }
+    if (messages.length) {
+      text += "Q&A\n";
+      messages.forEach(m => {
+        text += (m.role === "user" ? "You: " : "Docly: ") + m.display + "\n\n";
+      });
+    }
     return text;
   }
   function exportFileName(ext) {
@@ -735,18 +830,18 @@ function Docly() {
     const doc = new jsPDF();
     const marginLeft = 14;
     let y = 20;
-    doc.setFontSize(16);
-    doc.text("Docly Summary", marginLeft, y);
-    y += 8;
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-    doc.text(`${file ? file.name : ""} — ${new Date().toLocaleDateString()}`, marginLeft, y);
-    y += 10;
-    doc.setTextColor(20);
-    messages.forEach(m => {
+    function writeSection(heading, body) {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFontSize(12);
+      doc.setTextColor(46, 157, 244);
+      doc.text(heading, marginLeft, y);
+      y += 7;
       doc.setFontSize(11);
-      const prefix = m.role === "user" ? "You: " : "Docly: ";
-      const lines = doc.splitTextToSize(prefix + m.display, 180);
+      doc.setTextColor(20);
+      const lines = doc.splitTextToSize(body, 180);
       lines.forEach(line => {
         if (y > 280) {
           doc.addPage();
@@ -756,15 +851,52 @@ function Docly() {
         y += 6;
       });
       y += 4;
-    });
+    }
+    doc.setFontSize(16);
+    doc.setTextColor(20);
+    doc.text(gist ? stripMarkdown(gist.title) : "Docly Summary", marginLeft, y);
+    y += 8;
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    doc.text(`${file ? file.name : ""} — ${new Date().toLocaleDateString()}`, marginLeft, y);
+    y += 10;
+    if (gist) {
+      if (gist.summary) writeSection("TL;DR", stripMarkdown(gist.summary));
+      if (gist.points.length) writeSection("Key Points", gist.points.map((p, i) => `${i + 1}. ${stripMarkdown(p)}`).join("\n"));
+      if (gist.important.length) writeSection("Important to Know", gist.important.map(p => `• ${stripMarkdown(p)}`).join("\n"));
+      if (gist.tags.length) writeSection("Tags", gist.tags.join(", "));
+    }
+    if (messages.length) {
+      writeSection("Q&A", messages.map(m => (m.role === "user" ? "You: " : "Docly: ") + m.display).join("\n\n"));
+    }
     doc.save(exportFileName("pdf"));
   }
+  function markdownToHtml(str) {
+    const escaped = String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/^[-*]\s+/gm, "").replace(/^#+\s+/gm, "");
+  }
   function exportAsWord() {
-    const bodyHtml = messages.map(m => `<p><strong>${m.role === "user" ? "You" : "Docly"}:</strong> ${m.display.replace(/\n/g, "<br/>")}</p>`).join("");
+    let bodyHtml = "";
+    if (gist) {
+      bodyHtml += `<h3>TL;DR</h3><p>${markdownToHtml(gist.summary)}</p>`;
+      if (gist.points.length) {
+        bodyHtml += `<h3>Key Points</h3><ol>${gist.points.map(p => `<li>${markdownToHtml(p)}</li>`).join("")}</ol>`;
+      }
+      if (gist.important.length) {
+        bodyHtml += `<h3>Important to Know</h3><ul>${gist.important.map(p => `<li>${markdownToHtml(p)}</li>`).join("")}</ul>`;
+      }
+      if (gist.tags.length) {
+        bodyHtml += `<p><strong>Tags:</strong> ${gist.tags.join(", ")}</p>`;
+      }
+    }
+    if (messages.length) {
+      bodyHtml += "<h3>Q&A</h3>";
+      bodyHtml += messages.map(m => `<p><strong>${m.role === "user" ? "You" : "Docly"}:</strong> ${markdownToHtml(m.display).replace(/\n/g, "<br/>")}</p>`).join("");
+    }
     const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
 <head><meta charset='utf-8'><title>Docly Summary</title></head>
 <body>
-<h2>Docly — ${file ? file.name : "Summary"}</h2>
+<h2>Docly — ${gist ? stripMarkdown(gist.title) : file ? file.name : "Summary"}</h2>
 <p style="color:#888;font-size:12px;">${new Date().toLocaleDateString()}</p>
 ${bodyHtml}
 </body></html>`;
@@ -780,7 +912,7 @@ ${bodyHtml}
   }
   async function sendQuestion() {
     const q = chatInput.trim();
-    if (!q || loading) return;
+    if (!q || loading || !gist) return;
     setChatInput("");
     setError(null);
     const newUserMsg = {
@@ -794,7 +926,18 @@ ${bodyHtml}
     setMessages(updated);
     setLoading(true);
     try {
-      const answer = await callBackend(toGeminiHistory(updated));
+      const docContext = {
+        role: "user",
+        parts: [{
+          text: `Document context (already summarized):\nTitle: ${gist.title}\nSummary: ${gist.summary}\nKey points: ${gist.points.join("; ")}\nImportant: ${gist.important.join("; ")}\n\nAnswer the user's questions below based on this document.`
+        }]
+      };
+      // Oldest first, newest question last — the document context anchors
+      // the conversation, then every prior Q&A turn in order, then the
+      // question just asked.
+      const requestContents = [docContext, ...toGeminiHistory(updated)];
+      const data = await callBackend(requestContents, "chat");
+      const answer = data.text || "";
       setMessages(prev => [...prev, {
         role: "assistant",
         parts: [{
@@ -843,7 +986,7 @@ ${bodyHtml}
         className: "text-4xl sm:text-5xl font-semibold tracking-tight mb-4 text-white max-w-2xl"
       }, "Read the point, skip the pages."), /*#__PURE__*/React.createElement("p", {
         className: "text-[#8CA3C7] mb-8 max-w-lg text-[15px]"
-      }, "Upload any PDF — from textbook chapters and research papers to contracts. Docly summarizes the content in seconds and helps you understand it by answering your questions."), /*#__PURE__*/React.createElement("button", {
+      }, "Drop in any PDF — a textbook chapter, a contract, a research paper. Docly gives you a clean summary in seconds, then answers your questions about it."), /*#__PURE__*/React.createElement("button", {
         onClick: () => setPreAuthView("auth"),
         className: "mono text-sm bg-[#2E9DF4] neon-glow text-[#0B1220] rounded-lg px-8 py-3.5 font-semibold hover:opacity-90 transition-opacity mb-16"
       }, "GET STARTED FREE"), /*#__PURE__*/React.createElement("div", {
@@ -1098,12 +1241,16 @@ ${bodyHtml}
     className: "text-[#8CA3C7] hover:text-[#E6EDF3] shrink-0"
   }, /*#__PURE__*/React.createElement(Icon.X, {
     className: "w-4 h-4"
-  }))), messages.length === 0 && !loading && error !== "LIMIT_REACHED" && /*#__PURE__*/React.createElement("button", {
+  }))), !gist && !loading && error !== "LIMIT_REACHED" && /*#__PURE__*/React.createElement("button", {
     onClick: startSummary,
     className: "mono text-sm bg-[#2E9DF4] neon-glow text-[#0B1220] rounded-lg py-3 flex items-center justify-center gap-2 font-semibold hover:opacity-90 transition-opacity"
   }, /*#__PURE__*/React.createElement(Icon.Sparkles, {
     className: "w-4 h-4"
-  }), " SUMMARIZE"), error === "LIMIT_REACHED" && /*#__PURE__*/React.createElement("div", {
+  }), " SUMMARIZE"), loading && !gist && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 justify-center py-6 text-[13px] text-[#8CA3C7]"
+  }, /*#__PURE__*/React.createElement(Icon.Loader, {
+    className: "w-4 h-4"
+  }), " building your summary…"), error === "LIMIT_REACHED" && /*#__PURE__*/React.createElement("div", {
     className: "border border-[#2E9DF4]/40 bg-[#2E9DF4]/5 rounded-lg p-4 flex flex-col gap-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 text-[#2E9DF4] mono text-[12px]"
@@ -1120,7 +1267,50 @@ ${bodyHtml}
     className: "mono text-[13px] w-full border border-[#2E9DF4] text-[#2E9DF4] rounded-lg py-2.5 hover:bg-[#2E9DF4]/10 transition-colors"
   }, "OR GO PRO — GHS 30/MONTH")), error && error !== "LIMIT_REACHED" && /*#__PURE__*/React.createElement("div", {
     className: "text-[13px] text-[#FF5C5C]"
-  }, error), (messages.length > 0 || loading) && /*#__PURE__*/React.createElement("div", {
+  }, error), gist && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col gap-3"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "mono text-[10px] text-[#2E9DF4] tracking-widest"
+  }, "DOCUMENT GIST"), /*#__PURE__*/React.createElement("h2", {
+    className: "text-xl font-semibold text-white mt-1"
+  }, gist.title)), /*#__PURE__*/React.createElement("div", {
+    className: "bg-[#16213A] border border-[#25355A] rounded-lg p-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mono text-[11px] text-[#8CA3C7] mb-2"
+  }, "TL;DR"), /*#__PURE__*/React.createElement("div", {
+    className: "text-[14px] text-[#E6EDF3] leading-relaxed"
+  }, renderMarkdownBlock(gist.summary, "sum"))), gist.points.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "bg-[#16213A] border border-[#25355A] rounded-lg p-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mono text-[11px] text-[#8CA3C7] mb-3"
+  }, "KEY POINTS"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col gap-2"
+  }, gist.points.map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "flex gap-3 items-start bg-[#0B1220] border border-[#25355A] rounded-lg p-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "mono text-[10px] font-bold text-[#2E9DF4] bg-[#2E9DF4]/15 rounded w-5 h-5 flex items-center justify-center shrink-0"
+  }, i + 1), /*#__PURE__*/React.createElement("p", {
+    className: "text-[14px] text-[#E6EDF3] leading-snug"
+  }, renderInline(p, `pt${i}`)))))), gist.important.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "bg-[#16213A] border border-[#FFB020]/30 rounded-lg p-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mono text-[11px] text-[#FFB020] mb-3"
+  }, "IMPORTANT TO KNOW"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col gap-2"
+  }, gist.important.map((p, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "flex gap-3 items-start bg-[#0B1220] border border-[#25355A] rounded-lg p-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "mono text-[10px] font-bold text-[#FFB020] bg-[#FFB020]/15 rounded w-5 h-5 flex items-center justify-center shrink-0"
+  }, "!"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[14px] text-[#E6EDF3] leading-snug"
+  }, renderInline(p, `imp${i}`)))))), gist.tags.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, gist.tags.map((t, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    className: "mono text-[11px] px-2.5 py-1 rounded-full border border-[#25355A] text-[#8CA3C7]"
+  }, "#", t)))), gist && (messages.length > 0 || loading) && /*#__PURE__*/React.createElement("div", {
     ref: scrollRef,
     className: "flex flex-col gap-4 bg-[#16213A] border border-[#25355A] rounded-lg p-4 max-h-[50vh] overflow-y-auto"
   }, messages.map((m, i) => /*#__PURE__*/React.createElement("div", {
@@ -1128,13 +1318,13 @@ ${bodyHtml}
     className: `flex ${m.role === "user" ? "justify-end" : "justify-start"}`
   }, /*#__PURE__*/React.createElement("div", {
     className: `rounded-lg px-3 py-2 max-w-[85%] text-[14px] whitespace-pre-wrap ${m.role === "user" ? "bg-[#2E9DF4]/10 border border-[#2E9DF4]/30 text-[#E6EDF3]" : "bg-[#0B1220] border border-[#25355A] text-[#E6EDF3]"}`
-  }, m.display))), loading && /*#__PURE__*/React.createElement("div", {
+  }, m.display))), loading && messages.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "flex justify-start"
   }, /*#__PURE__*/React.createElement("div", {
     className: "rounded-lg px-3 py-2 bg-[#0B1220] border border-[#25355A] flex items-center gap-2 text-[13px] text-[#8CA3C7]"
   }, /*#__PURE__*/React.createElement(Icon.Loader, {
     className: "w-3.5 h-3.5"
-  }), " thinking…"))), messages.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }), " thinking…"))), gist && /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("input", {
     value: chatInput,
@@ -1149,11 +1339,11 @@ ${bodyHtml}
     className: "bg-[#2E9DF4] text-[#0B1220] rounded-lg p-2.5 disabled:opacity-40 hover:opacity-90 transition-opacity"
   }, /*#__PURE__*/React.createElement(Icon.Send, {
     className: "w-4 h-4"
-  }))), !isPro && messages.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }))), !isPro && gist && /*#__PURE__*/React.createElement("div", {
     className: "mono text-[11px] text-[#8CA3C7] flex items-center gap-1.5 justify-center"
   }, /*#__PURE__*/React.createElement(Icon.Zap, {
     className: "w-3 h-3 text-[#FFB020]"
-  }), " Pro removes the daily limit"), messages.length > 0 && hasUnlimitedAccess && /*#__PURE__*/React.createElement("div", {
+  }), " Pro removes the daily limit"), gist && hasUnlimitedAccess && /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-2 justify-center"
   }, /*#__PURE__*/React.createElement("span", {
     className: "mono text-[10px] text-[#8CA3C7]"
@@ -1166,7 +1356,7 @@ ${bodyHtml}
   }, ".PDF"), /*#__PURE__*/React.createElement("button", {
     onClick: exportAsWord,
     className: "mono text-[11px] px-2.5 py-1 rounded border border-[#25355A] text-[#8CA3C7] hover:text-[#E6EDF3] hover:border-[#2E9DF4]/60 transition-colors"
-  }, ".DOC")), messages.length > 0 && !hasUnlimitedAccess && /*#__PURE__*/React.createElement("div", {
+  }, ".DOC")), gist && !hasUnlimitedAccess && /*#__PURE__*/React.createElement("div", {
     className: "mono text-[11px] text-[#8CA3C7] flex items-center gap-1.5 justify-center"
   }, /*#__PURE__*/React.createElement(Icon.Zap, {
     className: "w-3 h-3 text-[#FFB020]"
