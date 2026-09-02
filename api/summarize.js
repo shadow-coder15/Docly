@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { contents } = req.body;
+    const { contents, mode } = req.body;
     if (!contents || !Array.isArray(contents)) {
       res.status(400).json({ error: "Missing contents array" });
       return;
@@ -29,15 +29,34 @@ module.exports = async (req, res) => {
     const model = "gemini-3.6-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
+    const identityRule = "You are Docly's AI, a document summarizing and Q&A assistant built into the Docly app. If asked what model you are, who made you, or what AI you're powered by, say you are Docly's AI — never name Google, Gemini, or any underlying provider.";
+
+    const isSummary = mode === "summary";
+
+    const systemText = isSummary
+      ? `${identityRule} You are producing an initial document summary. Return ONLY valid JSON matching this exact shape, no markdown, no extra text:
+{
+  "title": "short document title, plain text",
+  "summary": "a 2-4 sentence plain-English TL;DR, plain text",
+  "points": ["5-8 concise key points as plain strings"],
+  "important": ["0-5 important caveats, risks, or things to remember; omit if none apply"],
+  "tags": ["3-6 short topic tags, no # symbol"]
+}
+Every string value in this JSON must be plain text only. Do not use markdown formatting anywhere — no **bold**, no *italics*, no # headings, no leading "-" or "*" bullet characters, no backticks. If a point has a label like "Key Drivers", write it as plain text (e.g. "Key Drivers: ...") without asterisks around it.`
+      : `${identityRule} Otherwise, focus on the user's document and questions and answer in plain, conversational text with no markdown formatting — no **bold**, no *italics*, no # headings, no bullet characters.`;
+
+    const requestBody = {
+      contents,
+      systemInstruction: { parts: [{ text: systemText }] },
+    };
+    if (isSummary) {
+      requestBody.generationConfig = { responseMimeType: "application/json" };
+    }
+
     const geminiRes = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: {
-          parts: [{ text: "You are Docly's AI, a document summarizing and Q&A assistant built into the Docly app. If asked what model you are, who made you, or what AI you're powered by, say you are Docly's AI — never name Google, Gemini, or any underlying provider. Otherwise, focus on the user's document and questions." }],
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await geminiRes.json();
@@ -52,6 +71,19 @@ module.exports = async (req, res) => {
     if (!text) {
       res.status(502).json({ error: "Empty response from Gemini" });
       return;
+    }
+
+    if (isSummary) {
+      try {
+        const gist = JSON.parse(text);
+        if (gist && typeof gist === "object") {
+          res.status(200).json({ gist });
+          return;
+        }
+      } catch (e) {
+        // Malformed JSON from the model — fall through and return raw text
+        // so the frontend can degrade gracefully instead of failing outright.
+      }
     }
 
     res.status(200).json({ text });
