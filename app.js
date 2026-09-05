@@ -331,6 +331,8 @@ function Docly() {
     count: 0
   });
   const [showDowngradeConfirm, setShowDowngradeConfirm] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showPlans, setShowPlans] = useState(false);
   const [updates, setUpdates] = useState([]);
   const [showUpdates, setShowUpdates] = useState(false);
   const [hasUnseenUpdate, setHasUnseenUpdate] = useState(false);
@@ -974,7 +976,7 @@ ${bodyHtml}
       }, /*#__PURE__*/React.createElement(DoclyLogo, {
         size: 28
       }), /*#__PURE__*/React.createElement("span", {
-        className: "mono font-semibold text-[15px] text-white"
+        className: "font-['Patrick_Hand',_cursive] font-semibold text-[17px] text-white"
       }, "docly")), /*#__PURE__*/React.createElement("button", {
         onClick: () => setPreAuthView("auth"),
         className: "mono text-[12px] px-3 py-1.5 rounded border border-[#2E9DF4] text-[#2E9DF4] hover:bg-[#2E9DF4]/10 transition-colors"
@@ -1071,7 +1073,7 @@ ${bodyHtml}
     }, /*#__PURE__*/React.createElement(DoclyLogo, {
       size: 36
     }), /*#__PURE__*/React.createElement("span", {
-      className: "mono font-semibold text-lg text-white"
+      className: "font-['Patrick_Hand',_cursive] font-semibold text-xl text-white"
     }, "docly")), /*#__PURE__*/React.createElement("p", {
       className: "text-center text-[13px] text-[#8CA3C7] mb-1"
     }, authMode === "signin" ? "Sign in to summarize documents" : "Create an account to get started"), /*#__PURE__*/React.createElement("div", {
@@ -1153,42 +1155,18 @@ ${bodyHtml}
   }, /*#__PURE__*/React.createElement(DoclyLogo, {
     size: 28
   }), /*#__PURE__*/React.createElement("span", {
-    className: "mono font-semibold tracking-tight text-[15px] text-white"
-  }, "docly")), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-3"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "mono text-[11px] text-[#A9C6EC] hidden sm:inline"
-  }, isPro ? "PRO" : dayPassActive ? "24H PASS" : `${docsLeftToday} FREE DOC LEFT TODAY`), !isPro && !dayPassActive && /*#__PURE__*/React.createElement("button", {
-    onClick: buyDayPass,
-    disabled: payLoading,
-    className: "mono text-[11px] px-3 py-1.5 rounded border border-[#8CA3C7] text-[#8CA3C7] hover:bg-[#8CA3C7]/10 transition-colors disabled:opacity-50"
-  }, "GHS 2 / 24H"), /*#__PURE__*/React.createElement("button", {
-    onClick: togglePro,
-    disabled: payLoading,
-    className: `mono text-[11px] px-3 py-1.5 rounded border transition-colors disabled:opacity-50 ${isPro ? "border-[#FFB020] text-[#FFB020] bg-[#FFB020]/10" : "border-[#2E9DF4] text-[#2E9DF4] hover:bg-[#2E9DF4]/10"}`
-  }, payLoading ? /*#__PURE__*/React.createElement("span", {
-    className: "flex items-center gap-1"
-  }, /*#__PURE__*/React.createElement(Icon.Loader, {
-    className: "w-3 h-3"
-  }), " VERIFYING") : isPro ? /*#__PURE__*/React.createElement("span", {
-    className: "flex items-center gap-1"
-  }, /*#__PURE__*/React.createElement(Icon.Check, {
-    className: "w-3 h-3"
-  }), " PRO ACTIVE") : "UPGRADE TO PRO"), /*#__PURE__*/React.createElement("button", {
-    onClick: openUpdates,
-    className: "relative text-[#8CA3C7] hover:text-[#E6EDF3] transition-colors",
-    title: "Updates"
-  }, /*#__PURE__*/React.createElement(Icon.Bell, {
-    className: "w-4 h-4"
-  }), hasUnseenUpdate && /*#__PURE__*/React.createElement("span", {
-    className: "absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#FF5C5C]"
-  })), /*#__PURE__*/React.createElement("button", {
-    onClick: signOut,
-    className: "text-[#8CA3C7] hover:text-[#E6EDF3] transition-colors",
-    title: "Sign out"
-  }, /*#__PURE__*/React.createElement(Icon.Logout, {
-    className: "w-4 h-4"
-  })))), payError && /*#__PURE__*/React.createElement("div", {
+    className: "font-['Patrick_Hand',_cursive] font-semibold tracking-tight text-[17px] text-white"
+  }, "docly")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowMenu(true),
+    className: "relative w-9 h-9 rounded-full border border-[#2E9DF4] flex items-center justify-center text-[#2E9DF4]",
+    style: { boxShadow: "0 0 10px rgba(46,157,244,.4), inset 0 0 6px rgba(46,157,244,.15)", textShadow: "0 0 6px rgba(46,157,244,.8)" },
+    title: "Menu"
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2
+  }, /*#__PURE__*/React.createElement("path", { d: "M4 6h16M4 12h16M4 18h16" })), hasUnseenUpdate && /*#__PURE__*/React.createElement("span", {
+    className: "absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#FF5C5C]",
+    style: { boxShadow: "0 0 6px rgba(255,92,92,.6)" }
+  }))), payError && /*#__PURE__*/React.createElement("div", {
     className: "bg-[#FF5C5C]/10 border-b border-[#FF5C5C]/30 text-[#FF5C5C] text-[12px] text-center py-2 px-4"
   }, payError), /*#__PURE__*/React.createElement("main", {
     className: "flex-1 flex flex-col items-center px-4 py-10"
@@ -1360,7 +1338,84 @@ ${bodyHtml}
     className: "mono text-[11px] text-[#8CA3C7] flex items-center gap-1.5 justify-center"
   }, /*#__PURE__*/React.createElement(Icon.Zap, {
     className: "w-3 h-3 text-[#FFB020]"
-  }), " Export as PDF, Word, or text with Pro"))), showUpdates && /*#__PURE__*/React.createElement("div", {
+  }), " Export as PDF, Word, or text with Pro"))), showMenu && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 bg-black/80 flex items-start justify-end z-50 px-4 pt-16"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0",
+    onClick: () => setShowMenu(false)
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "relative bg-[#16213A] border border-[#2E9DF4] rounded-xl w-full max-w-xs overflow-hidden",
+    style: { boxShadow: "0 0 20px rgba(46,157,244,.15)" }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setShowMenu(false); setShowPlans(true); },
+    className: "w-full flex items-center gap-3 px-4 py-3 border-b border-[#25355A] text-left hover:bg-[#0B1220]/50 transition-colors"
+  }, /*#__PURE__*/React.createElement(Icon.Zap, { className: "w-4 h-4 text-[#2E9DF4]" }), /*#__PURE__*/React.createElement("span", {
+    className: "text-[14px] text-[#E6EDF3] flex-1"
+  }, "Plans"), isPro ? /*#__PURE__*/React.createElement("span", {
+    className: "mono text-[9px] bg-[#FFB020] text-[#0B1220] px-2 py-0.5 rounded-full font-bold"
+  }, "PRO ACTIVE") : dayPassActive ? /*#__PURE__*/React.createElement("span", {
+    className: "mono text-[9px] bg-[#FFB020] text-[#0B1220] px-2 py-0.5 rounded-full font-bold"
+  }, "24H PASS") : /*#__PURE__*/React.createElement("span", {
+    className: "mono text-[9px] bg-[#2E9DF4] text-[#0B1220] px-2 py-0.5 rounded-full font-bold"
+  }, "PRO — POPULAR")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setShowMenu(false); setError("Library is coming soon — you'll be able to browse past summaries here."); },
+    className: "w-full flex items-center gap-3 px-4 py-3 border-b border-[#25355A] text-left hover:bg-[#0B1220]/50 transition-colors"
+  }, /*#__PURE__*/React.createElement(Icon.File, { className: "w-4 h-4 text-[#2E9DF4]" }), /*#__PURE__*/React.createElement("span", {
+    className: "text-[14px] text-[#E6EDF3] flex-1"
+  }, "Library"), /*#__PURE__*/React.createElement("span", {
+    className: "mono text-[9px] bg-[#25355A] text-[#8CA3C7] px-2 py-0.5 rounded-full font-bold"
+  }, "SOON")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setShowMenu(false); openUpdates(); },
+    className: "w-full flex items-center gap-3 px-4 py-3 border-b border-[#25355A] text-left hover:bg-[#0B1220]/50 transition-colors"
+  }, /*#__PURE__*/React.createElement(Icon.Bell, { className: "w-4 h-4 text-[#2E9DF4]" }), /*#__PURE__*/React.createElement("span", {
+    className: "text-[14px] text-[#E6EDF3] flex-1"
+  }, "Notifications"), hasUnseenUpdate && /*#__PURE__*/React.createElement("span", {
+    className: "w-2 h-2 rounded-full bg-[#FF5C5C]"
+  })), /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setShowMenu(false); signOut(); },
+    className: "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#0B1220]/50 transition-colors"
+  }, /*#__PURE__*/React.createElement(Icon.Logout, { className: "w-4 h-4 text-[#FF5C5C]" }), /*#__PURE__*/React.createElement("span", {
+    className: "text-[14px] text-[#FF5C5C]"
+  }, "Sign out")))), showPlans && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-[#16213A] border border-[#25355A] rounded-xl p-5 w-full max-w-sm flex flex-col gap-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "mono text-sm font-semibold text-white"
+  }, "PLANS"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setShowPlans(false),
+    className: "text-[#8CA3C7] hover:text-[#E6EDF3]"
+  }, /*#__PURE__*/React.createElement(Icon.X, { className: "w-4 h-4" }))),
+  /*#__PURE__*/React.createElement("div", {
+    className: "border border-[#25355A] rounded-lg p-4 flex flex-col gap-2"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mono text-[11px] text-[#8CA3C7]"
+  }, "24-HOUR PASS"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xl font-semibold text-white"
+  }, "GHS 2"), /*#__PURE__*/React.createElement("p", {
+    className: "text-[13px] text-[#8CA3C7]"
+  }, "Unlimited documents for a full day."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setShowPlans(false); buyDayPass(); },
+    disabled: payLoading || dayPassActive,
+    className: "mono text-[13px] w-full border border-[#8CA3C7] text-[#8CA3C7] rounded-lg py-2 hover:bg-[#8CA3C7]/10 transition-colors disabled:opacity-50"
+  }, dayPassActive ? "ACTIVE" : "GET DAY PASS")),
+  /*#__PURE__*/React.createElement("div", {
+    className: "border border-[#2E9DF4] rounded-lg p-4 flex flex-col gap-2 relative"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "absolute -top-2.5 right-4 mono text-[10px] bg-[#2E9DF4] text-[#0B1220] px-2 py-0.5 rounded font-semibold"
+  }, "POPULAR"), /*#__PURE__*/React.createElement("div", {
+    className: "mono text-[11px] text-[#8CA3C7]"
+  }, "PRO"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xl font-semibold text-white"
+  }, "GHS 30", /*#__PURE__*/React.createElement("span", { className: "text-sm text-[#8CA3C7] font-normal" }, "/mo")), /*#__PURE__*/React.createElement("p", {
+    className: "text-[13px] text-[#8CA3C7]"
+  }, "Unlimited documents, longer docs, no ads."), /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setShowPlans(false); togglePro(); },
+    disabled: payLoading,
+    className: "mono text-[13px] w-full bg-[#2E9DF4] text-[#0B1220] rounded-lg py-2 font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+  }, isPro ? "MANAGE PRO" : "GO PRO")))), showUpdates && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4"
   }, /*#__PURE__*/React.createElement("div", {
     className: "bg-[#16213A] border border-[#25355A] rounded-xl p-5 w-full max-w-sm max-h-[70vh] flex flex-col gap-3"
