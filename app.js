@@ -658,7 +658,6 @@ function Docly() {
   }
   function resetDoc() {
     setFile(null);
-    setBase64Data(null);
     setPageEstimate(null);
     setMessages([]);
     setGist(null);
