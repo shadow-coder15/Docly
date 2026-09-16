@@ -666,31 +666,32 @@ function Docly() {
     setChatInput("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
-  function handleFile(f) {
-    setError(null);
-    if (!f) return;
-    if (f.type !== "application/pdf") {
-      setError("Docly reads PDFs only, for now.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      const b64 = dataUrl.split(",")[1];
-      let pages = null;
-      try {
-        pages = Math.max(1, Math.round(f.size / 50000));
-        // Lightweight size-based estimate (~50KB/page average) — avoids
-        // decoding the whole file a second time via atob(), which was
-        // spiking memory usage enough to crash the tab on some phones.
-      } catch (e) {}
-      setFile(f);
-      setBase64Data(b64);
-      setPageEstimate(pages);
-    };
-    reader.onerror = () => setError("Couldn't read that file. Try again.");
-    reader.readAsDataURL(f);
+  const MAX_UPLOAD_MB = 8;
+
+function handleFile(f) {
+  setError(null);
+
+  if (!f) return;
+
+  if (f.type !== "application/pdf") {
+    setError("Docly reads PDFs only, for now.");
+    return;
   }
+
+  if (f.size > MAX_UPLOAD_MB * 1024 * 1024) {
+    setError(
+      `Please choose a PDF smaller than ${MAX_UPLOAD_MB} MB.`
+    );
+    return;
+  }
+
+  // Keep the original PDF File.
+  // Do not convert it to Base64 in the browser.
+  const pages = Math.max(1, Math.round(f.size / 50000));
+
+  setFile(f);
+  setPageEstimate(pages);
+}
   function onDrop(e) {
     e.preventDefault();
     handleFile(e.dataTransfer.files?.[0]);
