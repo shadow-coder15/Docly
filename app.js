@@ -318,7 +318,6 @@ function Docly() {
   const [authNotice, setAuthNotice] = useState(null);
   const [ready, setReady] = useState(false);
   const [file, setFile] = useState(null);
-  const [base64Data, setBase64Data] = useState(null);
   const [pageEstimate, setPageEstimate] = useState(null);
   const [messages, setMessages] = useState([]);
   const [gist, setGist] = useState(null);
