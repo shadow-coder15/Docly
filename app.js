@@ -680,7 +680,10 @@ function Docly() {
       const b64 = dataUrl.split(",")[1];
       let pages = null;
       try {
-        pages = estimatePageCount(atob(b64));
+        pages = Math.max(1, Math.round(f.size / 50000));
+        // Lightweight size-based estimate (~50KB/page average) — avoids
+        // decoding the whole file a second time via atob(), which was
+        // spiking memory usage enough to crash the tab on some phones.
       } catch (e) {}
       setFile(f);
       setBase64Data(b64);
