@@ -733,18 +733,7 @@ function handleFile(f) {
     setLoading(true);
     setGist(null);
     setMessages([]);
-    const parts = [{
-      inlineData: {
-        mimeType: "application/pdf",
-        data: base64Data
-      }
-    }, {
-      text: "Summarize this document."
-    }];
-    const requestContents = [{
-      role: "user",
-      parts
-    }];
+     const data = await callBackend(null,"summary",file);
     try {
       const data = await callBackend(requestContents, "summary");
       if (data.gist) {
