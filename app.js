@@ -6,7 +6,7 @@ const {
 const SUPABASE_URL = "https://ukjwqevoqsdfnmylxswt.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_1mWGhz0AjDtRhN8rOvx7FA_tZ8Ljb6L";
 const PAYSTACK_PUBLIC_KEY = "pk_live_22477c5d139dc5abf0ff7e0cb75b4f9cc836a746";
-const PAYSTACK_PLAN_CODE = "PLN_vpq9g6959dae6ns";
+const PAYSTACK_PLAN_CODE = "PLN_q9pwohjn2n0dax8";
 const PRO_PRICE_PESEWAS = 3000;
 const DAYPASS_PRICE_PESEWAS = 200;
 const FREE_MAX_PAGES = 4;
