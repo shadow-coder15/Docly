@@ -695,23 +695,43 @@ function handleFile(f) {
     e.preventDefault();
     handleFile(e.dataTransfer.files?.[0]);
   }
-  async function callBackend(contents, mode) {
-    const res = await fetch("/api/summarize", {
+ async function callBackend(contents, mode, pdfFile) {
+  let res;
+
+  if (pdfFile) {
+    // Send the original PDF file directly.
+    // The backend converts it to Base64 instead of the browser.
+    res = await fetch("/api/summarize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/pdf",
+        "X-Docly-Mode": mode || "summary"
+      },
+      body: pdfFile
+    });
+  } else {
+    // Chat requests continue to use JSON.
+    res = await fetch("/api/summarize", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(mode ? {
-        contents,
+      body: JSON.stringify(
         mode
-      } : {
-        contents
-      })
+          ? { contents, mode }
+          : { contents }
+      )
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Request failed");
-    return data;
   }
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data.error || "Request failed");
+  }
+
+  return data;
+}
   function toGeminiHistory(msgs) {
     return msgs.map(m => ({
       role: m.role === "assistant" ? "model" : "user",
@@ -733,9 +753,8 @@ function handleFile(f) {
     setLoading(true);
     setGist(null);
     setMessages([]);
-     const data = await callBackend(null,"summary",file);
     try {
-      const data = await callBackend(requestContents, "summary");
+        const data = await callBackend(null, "summary", file);
       if (data.gist) {
         setGist({
           title: data.gist.title || file.name,
